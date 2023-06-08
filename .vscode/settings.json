@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "*.glade": "xml",
+        "iostream": "cpp",
+        "atomic": "cpp",
+        "compare": "cpp",
+        "cstdint": "cpp"
+    },
+    "cmake.sourceDirectory": "/home/jerzy/Data/Programowanie/RayTracing in a weekend/C++",
+    // "rust-analyzer.linkedProjects": [ "Rust/Cargo.toml", ]
+}
