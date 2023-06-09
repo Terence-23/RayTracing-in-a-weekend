@@ -4,43 +4,47 @@ void write_ppm(std::string filename, std::vector<std::vector<RGB_float>>& vec)
 {
 
     //vec[y][x]
-    u_int32_t imsize[] = {vec[0].size(), vec.size()};
     std::ofstream file(filename, std::ios_base::binary);
 
-    file << "P3\n" << imsize[0] << ' ' << imsize[1] << "\n255\n";
-
-    for(auto v: vec){
-
-        for(auto col:v){
-            file << RGB_int(col) << "  ";
-        }
-        file << '\n';
-    }
-
+    write_ppm(file, vec);
     file.close();
 
 }
 
-void write_ppm(std::string filename, std::vector<std::vector<RGB_int>>& vec)
-{
+void write_ppm(std::ostream &stream, std::vector<std::vector<RGB_float>>& vec){
 
-    //vec[y][x]
-    u_int32_t imsize[] = {vec[0].size(), vec.size()};
-    std::ofstream file(filename, std::ios_base::binary);
-
-    file << "P3\n" << imsize[0] << ' ' << imsize[1] << "\n255\n";
-    // std::cout << "P3\n" << imsize[0] << ' ' << imsize[1] << "\n255\n";
+    u_int64_t imsize[] = {vec[0].size(), vec.size()};
+    stream << "P3\n" << imsize[0] << ' ' << imsize[1] << "\n255\n";
 
     for(auto v: vec){
 
         for(auto col:v){
-            file << col << "  ";
-            // std::cout << col << "  ";
+            stream << RGB_int(col) << "  ";
         }
-        file << '\n';
-        // std::cout << '\n';
+        stream << '\n';
     }
+}
+
+void write_ppm(std::string filename, std::vector<std::vector<RGB_int>>& vec)
+{
+    std::ofstream file(filename, std::ios_base::binary);
+    write_ppm(file, vec);
     file.close();
+}
+
+void write_ppm(std::ostream &stream, std::vector<std::vector<RGB_int>>& vec){
+
+    u_int64_t imsize[] = {vec[0].size(), vec.size()};
+    stream << "P3\n" << imsize[0] << ' ' << imsize[1] << "\n255\n";
+
+    for(auto v: vec){
+
+        for(auto col:v){
+            stream << col << "  ";
+        }
+        stream << '\n';
+    }
+
 }
 
 void write_test(){

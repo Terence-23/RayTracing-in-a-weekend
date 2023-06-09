@@ -6,6 +6,9 @@
 
 void write_ppm(std::vector<std::vector<RGB_int> > vec);
 void write_ppm(std::vector<std::vector<RGB_float> > vec);
+void write_ppm(std::ostream &stream, std::vector<std::vector<RGB_float>>& vec);
+
+void write_ppm(std::ostream &stream, std::vector<std::vector<RGB_int>>& vec);
 void write_test();
 
 #endif
