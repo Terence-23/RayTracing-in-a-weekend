@@ -6,7 +6,7 @@ RGB_int::RGB_int():R(0), B(0), G(0){
 RGB_int::RGB_int(int r, int g, int b)
 {
     this->R = r;
-    this->G = G;
+    this->G = g;
     this->B = b;
 }
 // std::ostream & RGB_int::operator <<( std::ostream & os, const RGB_int & col )

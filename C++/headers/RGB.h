@@ -1,7 +1,9 @@
 #ifndef __RGB
 #define __RGB
 
-#include"external_includes.h"
+// #include"external_includes.h"
+
+#include <iostream>
 
 class RGB_float{
     public:
