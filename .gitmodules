@@ -1,6 +1,7 @@
 [submodule "Zig/lib/zigimg"]
 	path = Zig/lib/zigimg
 	url = https://github.com/zigimg/zigimg
-[submodule "C++/lib/tqdm.cpp"]
-	path = C++/lib/tqdm.cpp
+
+[submodule "C++/tqdm.cpp"]
+	path = C++/tqdm.cpp
 	url = https://github.com/tqdm/tqdm.cpp.git
