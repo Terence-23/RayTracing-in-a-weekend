@@ -47,7 +47,7 @@ public:
         return *this*(1/t);
     }
 
-    inline double dot( const vec3 &v) {
+    inline double dot(const vec3 &v) {
         return x * v.x
             + y * v.y
             + z * v.z;

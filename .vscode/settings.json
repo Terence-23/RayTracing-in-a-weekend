@@ -76,7 +76,7 @@
         "valarray": "cpp",
         "variant": "cpp"
     },
-    "cmake.sourceDirectory": "/home/jerzy/Data/Programowanie/RayTracing in a weekend/C++",
+    "cmake.sourceDirectory": "/home/jerzy/Data/Programowanie/RayTracing-in-a-weekend/C++",
     "C_Cpp.errorSquiggles": "disabled",
     // "rust-analyzer.linkedProjects": [ "Rust/Cargo.toml", ]
 }
