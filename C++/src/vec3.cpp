@@ -15,12 +15,12 @@ vec3 vec3::operator -(){
     return vec3(-x, -y, -z);
 }
 
-double vec3::length()
+double vec3::length() const
 {
     return std::sqrt(this->length2());
 }
 
-double vec3::length2()
+double vec3::length2() const
 {
     return x*x + y*y + z*z;
 }

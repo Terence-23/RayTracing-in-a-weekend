@@ -10,8 +10,18 @@ class RGB_float{
     double R; double G; double B;
     RGB_float();
     RGB_float(double r, double g, double b);
+    inline RGB_float operator*(double t)const{
+        return RGB_float(t*R, t*G, t*B);
+    }
+    inline RGB_float operator+(RGB_float col)const{
+        return RGB_float(R+col.R, G+col.G, B+col.B);
+    }
 
 };
+
+inline RGB_float operator*(double t,  RGB_float col){
+    return RGB_float(t*col.R, t*col.G, t*col.B);
+}
 
 class RGB_int{
     public:

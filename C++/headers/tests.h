@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include"ppm_writer.h"
 #include"RGB.h"
 #include"vec3.h"

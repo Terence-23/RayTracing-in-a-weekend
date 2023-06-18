@@ -7,7 +7,7 @@
 class vec3{
 
 private:
-    double length2();
+    double length2()const;
 
 public:
     float x, y, z; 
@@ -21,13 +21,14 @@ public:
     
     vec3& operator /=(const double t);
 
-    double length();
+    double length()const;
     friend std::ostream & operator <<( std::ostream & os, const vec3 & v ){    
         os << v.x << ' ' << v.y << ' ' << v.z;
         return os;
     }
-    inline vec3 unit_vector(vec3 v) {
-        return v / v.length();
+
+    inline vec3 unit_vector() const{
+        return *this / this->length();
     }
 
     inline vec3 operator+(const vec3 &v) {
@@ -38,11 +39,11 @@ public:
         return vec3(x - v.x, y - v.y, z - v.z);
     }
 
-    inline vec3 operator*(double t) {
+    inline vec3 operator*(double t) const{
         return vec3(t*x, t*y, t*z);;
     }
 
-    inline vec3 operator/( double t) {
+    inline vec3 operator/( double t) const{
         return *this*(1/t);
     }
 
@@ -58,3 +59,7 @@ public:
                     x * v.y - y * v.x);
     }
 };
+
+inline vec3 operator * (double t, vec3 v){
+    return v*t;
+}
