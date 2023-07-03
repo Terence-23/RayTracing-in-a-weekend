@@ -63,6 +63,8 @@ pub fn build(b: *std.Build) void {
 
     const zigimg = b.addModule("zigimg", .{ .source_file = .{ .path = "lib/zigimg/zigimg.zig" } });
     exe.addModule("zigimg", zigimg);
+    const progress_bar = b.addModule("progress", .{ .source_file = .{ .path = "lib/progress-zig/src/main.zig" } });
+    exe.addModule("progress", progress_bar);
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default

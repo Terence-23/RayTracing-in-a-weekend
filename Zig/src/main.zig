@@ -1,19 +1,10 @@
 const std = @import("std");
 const zigimg = @import("zigimg");
+const ray = @import("ray.zig");
 const zig_col = zigimg.color;
 const rgb = zig_col.Rgb24;
 
-pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
-
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
-
+fn write_test() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     const height: usize = 256;
@@ -48,11 +39,18 @@ pub fn main() !void {
 
     const enc_otp = zigimg.png.PNG.EncoderOptions{};
     try img.writeToFilePath("test.png", zigimg.AllFormats.ImageEncoderOptions{ .png = enc_otp });
-    try stdout.print("Write_test success\n", .{});
+    std.debug.print("Write_test success\n", .{});
+}
 
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
+pub fn main() !void {
+    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
+    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
 
-    try bw.flush(); // don't forget to flush!
+    try write_test();
+
+    try ray.viewport_test();
+
+    std.debug.print("Run `zig build test` to run the tests.\n", .{});
 }
 
 test "simple test" {
