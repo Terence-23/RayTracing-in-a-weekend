@@ -4,44 +4,31 @@ const zigimg = @import("zigimg");
 const zig_col = zigimg.color;
 const rgb = zig_col.Rgb24;
 const Progress = @import("progress");
+const vec = @import("ray.zig");
 
-pub const Vec3 = @Vector(3, f32);
-
-pub fn dot_product(v: Vec3, u: Vec3) f32 {
-    return v[0] * u[0] + v[1] * u[1] + v[2] * u[2];
-}
-
-pub fn cross_product(v: Vec3, u: Vec3) Vec3 {
-    return Vec3{
-        v.y * u.z - v.z * u.y,
-        v.z * u.x - v.x * u.z,
-        v.x * u.y - v.y * u.x,
-    };
-}
-
-pub fn vec_len(v: Vec3) f32 {
-    return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-}
-
-pub fn unit_vec(v: Vec3) Vec3 {
-    return v * @splat(3, 1 / vec_len(v));
-}
-
-pub const Ray = struct {
-    origin: Vec3,
-    direction: Vec3,
-    fn at(self: *Ray, t: f32) Vec3 {
-        return self.origin + self.direction * @splat(3, t);
+pub const Sphere = struct {
+    origin: vec.Vec3,
+    radius: f32,
+    fn collide(self: *Sphere, r: vec.Ray) bool {
+        var oc = r.origin - self.origin;
+        var a = vec.dot_product(r.direction, r.direction);
+        var b = 2.0 * vec.dot_product(oc, r.direction);
+        var c = vec.dot_product(oc, oc) - self.radius * self.radius;
+        return b * b - (4.0 * a * c) > 0.0;
     }
 };
 
-fn ray_color(r: Ray) rgb {
-    var unit_direction = unit_vec(r.direction);
+fn ray_color(r: vec.Ray) rgb {
+    var sphere = Sphere{ .origin = vec.Vec3{ 0.0, 0.0, -1.0 }, .radius = 0.5 };
+    if (sphere.collide(r)) {
+        return rgb{ .r = 255, .g = 0.0, .b = 0.0 };
+    }
+    var unit_direction = vec.unit_vec(r.direction);
     var t = 0.5 * (unit_direction[1] + 1.0);
     return rgb{ .r = @floatToInt(u8, 255 * ((1.0 - t) + t * 0.5)), .g = @floatToInt(u8, 255 * ((1.0 - t) + t * 0.7)), .b = 255 }; //(1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0);
 }
 
-pub fn viewport_test() !void {
+pub fn sphere_test() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
     var aspect_ratio: f32 = 3.0 / 2.0;
@@ -52,11 +39,11 @@ pub fn viewport_test() !void {
     var viewport_width: f32 = aspect_ratio * viewport_height;
     var focal_length: f32 = 1.0;
 
-    var origin: Vec3 = .{ 0.0, 0.0, 0.0 };
-    var horizontal: Vec3 = .{ viewport_width, 0.0, 0.0 };
-    var vertical: Vec3 = .{ 0.0, viewport_height, 0.0 };
+    var origin: vec.Vec3 = .{ 0.0, 0.0, 0.0 };
+    var horizontal: vec.Vec3 = .{ viewport_width, 0.0, 0.0 };
+    var vertical: vec.Vec3 = .{ 0.0, viewport_height, 0.0 };
     var lower_left_corner =
-        origin - horizontal / @splat(3, @as(f32, 2.0)) - vertical / @splat(3, @as(f32, 2.0)) - Vec3{ 0.0, 0.0, focal_length };
+        origin - horizontal / @splat(3, @as(f32, 2.0)) - vertical / @splat(3, @as(f32, 2.0)) - vec.Vec3{ 0.0, 0.0, focal_length };
 
     var stdout = std.io.getStdOut().writer();
     var pb = Progress.init(stdout);
@@ -74,7 +61,7 @@ pub fn viewport_test() !void {
     for (0..height) |j| {
         _ = try pb.next();
         for (0..width) |i| {
-            var r = Ray{ .origin = origin, .direction = lower_left_corner + horizontal * @splat(3, @intToFloat(f32, i) / @intToFloat(f32, (width - 1))) + vertical * @splat(3, (@intToFloat(f32, j) / @intToFloat(f32, (height - 1)))) };
+            var r = vec.Ray{ .origin = origin, .direction = lower_left_corner + horizontal * @splat(3, @intToFloat(f32, i) / @intToFloat(f32, (width - 1))) + vertical * @splat(3, (@intToFloat(f32, j) / @intToFloat(f32, (height - 1)))) };
             try pix.append(ray_color(r));
         }
     }
@@ -89,6 +76,6 @@ pub fn viewport_test() !void {
     }
 
     const enc_otp = zigimg.png.PNG.EncoderOptions{};
-    try img.writeToFilePath("viewport_test.png", zigimg.AllFormats.ImageEncoderOptions{ .png = enc_otp });
-    std.debug.print("Viewport_test success\n", .{});
+    try img.writeToFilePath("Sphere_test.png", zigimg.AllFormats.ImageEncoderOptions{ .png = enc_otp });
+    std.debug.print("Sphere_test success\n", .{});
 }

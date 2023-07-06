@@ -1,6 +1,9 @@
-const std = @import("std");
 const zigimg = @import("zigimg");
 const ray = @import("ray.zig");
+const sphere = @import("sphere.zig");
+
+const std = @import("std");
+
 const zig_col = zigimg.color;
 const rgb = zig_col.Rgb24;
 
@@ -49,6 +52,8 @@ pub fn main() !void {
     try write_test();
 
     try ray.viewport_test();
+
+    try sphere.sphere_test();
 
     std.debug.print("Run `zig build test` to run the tests.\n", .{});
 }
