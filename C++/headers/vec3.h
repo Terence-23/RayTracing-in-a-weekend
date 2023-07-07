@@ -58,6 +58,12 @@ public:
                     z * v.x - x * v.z,
                     x * v.y - y * v.x);
     }
+    inline bool operator!=(const vec3& v){
+        return x != v.x || y != v.y || z != v.z;
+    }
+    inline bool operator==(const vec3& v){
+        return x == v.x && y == v.y && z == v.z;
+    }
 };
 
 inline vec3 operator * (double t, vec3 v){

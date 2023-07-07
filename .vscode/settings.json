@@ -74,7 +74,8 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "valarray": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "bitset": "cpp"
     },
     "cmake.sourceDirectory": "/home/jerzy/Data/Programowanie/RayTracing-in-a-weekend/C++",
     "C_Cpp.errorSquiggles": "disabled",

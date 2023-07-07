@@ -11,5 +11,7 @@
 void write_test();
 void viewport_test();
 void sphere_test();
+void sphere_normal_test();
 void run_tests();
+
  
