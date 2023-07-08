@@ -55,6 +55,8 @@ pub fn main() !void {
 
     try sphere.sphere_test();
 
+    try sphere.sphere_test_normal();
+
     std.debug.print("Run `zig build test` to run the tests.\n", .{});
 }
 

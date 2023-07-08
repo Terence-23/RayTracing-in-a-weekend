@@ -11,6 +11,9 @@ pub fn dot_product(v: Vec3, u: Vec3) f32 {
     return v[0] * u[0] + v[1] * u[1] + v[2] * u[2];
 }
 
+pub fn vec3_all(v: @Vector(3, bool)) bool {
+    return v[0] and v[1] and v[2];
+}
 pub fn cross_product(v: Vec3, u: Vec3) Vec3 {
     return Vec3{
         v.y * u.z - v.z * u.y,
@@ -30,7 +33,7 @@ pub fn unit_vec(v: Vec3) Vec3 {
 pub const Ray = struct {
     origin: Vec3,
     direction: Vec3,
-    fn at(self: *Ray, t: f32) Vec3 {
+    pub fn at(self: *const Ray, t: f32) Vec3 {
         return self.origin + self.direction * @splat(3, t);
     }
 };
