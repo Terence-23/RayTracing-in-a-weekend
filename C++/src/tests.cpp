@@ -1,6 +1,5 @@
 #include "tests.h"
 
-#include "../lib/tqdm.cpp/include/tqdm/tqdm.h"
 
 using color = RGB_float;
 
@@ -36,98 +35,84 @@ void write_test()
     write_ppm("int_cols.ppm", colors_int);
 }
 
-RGB_float ray_colorV(const Ray &r)
+RGB_float ray_colorV(const Ray &r, const Scene& _scene)
 {
     vec3 unit_direction = r.direction.unit_vector();
-    auto t = 0.5 * (-unit_direction.y + 1.0);
+    auto t = 0.5 * (unit_direction.y + 1.0);
     return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
 }
 
 void viewport_test()
 {
-
     f32 aspect_ratio = 3.0 / 2;
     int width = 600;
-    int height = static_cast<int>(width / aspect_ratio);
-
-    auto viewport_height = 2.0;
-    auto viewport_width = aspect_ratio * viewport_height;
-    auto focal_length = 1.0;
-
-    std::cout << "\nH: " << height << " W: " << width << " W/H: " << double(width) / height << "\nAspect ratio: " << aspect_ratio << '\n';
-
-    vec3 origin(0, 0, 0);
-    vec3 horizontal(viewport_width, 0, 0), vertical(0, viewport_height, 0);
-    vec3 lower_left_corner = origin - horizontal / 2 - vertical / 2 - vec3(0, 0, focal_length);
-
-    std::vector<std::vector<RGB_float>> img(height);
-    for (int j : tqdm::range(height))
-    {
-        std::vector<RGB_float> row(width);
-
-        for (int i = 0; i < width; ++i)
-        {
-            auto u = double(i) / (width - 1);
-            auto v = double(j) / (height - 1);
-            Ray r(origin, lower_left_corner + horizontal * u + vertical * v - origin);
-            row[i] = ray_colorV(r);
-        }
-
-        img[j] = row;
-    }
+    Viewport viewport(width, aspect_ratio);
+    auto img = viewport.Render(ray_colorV, Scene());
     write_ppm("viewport_test.ppm", img);
 }
 
-RGB_float ray_colorS(const Ray &r)
+RGB_float ray_colorS(const Ray &r, const Scene& _scene)
 {
 
     if (Sphere(vec3(0, 0, -1), 0.5).collide(r))
         return color(1, 0, 0);
 
     vec3 unit_direction = r.direction.unit_vector();
-    auto t = 0.5 * (-unit_direction.y + 1.0);
+    auto t = 0.5 * (unit_direction.y + 1.0);
     return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
 }
 
 void sphere_test()
 {
-
     f32 aspect_ratio = 3.0 / 2;
     int width = 600;
-    int height = static_cast<int>(width / aspect_ratio);
-
-    auto viewport_height = 2.0;
-    auto viewport_width = aspect_ratio * viewport_height;
-    auto focal_length = 1.0;
-
-    std::cout << "\nH: " << height << " W: " << width << " W/H: " << double(width) / height << "\nAspect ratio: " << aspect_ratio << '\n';
-
-    vec3 origin(0, 0, 0);
-    vec3 horizontal(viewport_width, 0, 0), vertical(0, viewport_height, 0);
-    vec3 lower_left_corner = origin - horizontal / 2 - vertical / 2 - vec3(0, 0, focal_length);
-
-    std::vector<std::vector<RGB_float>> img(height);
-    for (int j : tqdm::range(height))
-    {
-        std::vector<RGB_float> row(width);
-
-        for (int i = 0; i < width; ++i)
-        {
-            auto u = double(i) / (width - 1);
-            auto v = double(j) / (height - 1);
-            Ray r(origin, lower_left_corner + horizontal * u + vertical * v - origin);
-            row[i] = ray_colorS(r);
-        }
-
-        img[j] = row;
-    }
+    Viewport viewport(width, aspect_ratio);
+    auto img = viewport.Render(ray_colorS, Scene());
     write_ppm("sphere_test.ppm", img);
 }
 
-RGB_float ray_colorSN(const Ray &r)
+RGB_float ray_colorSc(const Ray &r, const Scene& scene)
+{
+    float mint = 0, maxt = 1000;
+    std::vector<Hit> hits;
+    for(auto s: scene.spheres){
+        Hit hit = s.collisionNormal(r, mint, maxt);
+        if(hit.isHit()){
+            hits.push_back(hit);
+        }
+    }
+
+    if (!hits.empty()){
+        auto normal = std::min_element(
+            hits.begin(), 
+            hits.end(), 
+            [](const Hit& l, const Hit& r){return l.t < r.t;}
+            )->normal;
+        return RGB_float(normal.x + 1, normal.y + 1, normal.z + 1) * 0.5;
+    }
+    auto t = 0.5 * (r.direction.unit_vector().y + 1.0);
+    return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
+}
+
+void scene_test()
+{
+    f32 aspect_ratio = 3.0 / 2;
+    int width = 900;
+    Scene scene;
+    std::vector<Sphere> spheres = {
+        Sphere(vec3(-0.5, 0, -1), 0.5), 
+        Sphere(vec3(0.5, 0, -1), 0.5), 
+        Sphere(vec3(0, 0, -2), 1)};
+    scene.spheres = spheres;
+    Viewport viewport(width, aspect_ratio);
+    auto img = viewport.Render(ray_colorSc, scene);
+    write_ppm("scene_test.ppm", img);
+}
+
+RGB_float ray_colorSN(const Ray &r, const Scene& _scene)
 {
     
-    vec3 normal = Sphere(vec3(0, 0, -1), 0.5).collisionNormal(r);
+    vec3 normal = Sphere(vec3(0, 0, -1), 0.5).collisionNormal(r, 0, 1000).normal;
     if (normal != vec3(0, 0, 0))
         return RGB_float(normal.x + 1, normal.y + 1, normal.z + 1) * 0.5;
 
@@ -135,10 +120,10 @@ RGB_float ray_colorSN(const Ray &r)
     return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
 }
 
-RGB_float ray_colorN(const Ray &r)
+RGB_float ray_colorN(const Ray &r, const Scene& _scene)
 {
     
-    vec3 normal = Sphere(vec3(0, 0, 1), 0.5).collisionNormal(r);
+    vec3 normal = Sphere(vec3(0, 0, 1), 0.5).collisionNormal(r, 0, 1000).normal;
     if (normal != vec3(0, 0, 0))
         return RGB_float(normal.x + 1, normal.y + 1, normal.z + 1) * 0.5;
 
@@ -150,50 +135,12 @@ void sphere_normal_test()
 {
     f32 aspect_ratio = 3.0 / 2;
     int width = 600;
-    int height = static_cast<int>(width / aspect_ratio);
-
-    auto viewport_height = 2.0;
-    auto viewport_width = aspect_ratio * viewport_height;
-    auto focal_length = 1.0;
-
-    std::cout << "\nH: " << height << " W: " << width << " W/H: " << double(width) / height << "\nAspect ratio: " << aspect_ratio << '\n';
-
-    vec3 origin(0, 0, 0);
-    vec3 horizontal(viewport_width, 0, 0), vertical(0, viewport_height, 0);
-    vec3 lower_left_corner = origin - horizontal / 2 - vertical / 2 - vec3(0, 0, focal_length);
-
-    std::vector<std::vector<RGB_float>> img(height);
-    for (int j : tqdm::range(height))
-    {
-        std::vector<RGB_float> row(width);
-
-        for (int i = 0; i < width; ++i)
-        {
-            auto u = double(i) / (width - 1);
-            auto v = double(height - 1 - j) / (height - 1);
-            Ray r(origin, lower_left_corner + horizontal * u + vertical * v - origin);
-            row[i] = ray_colorSN(r);
-        }
-
-        img[j] = row;
-    }
+    Viewport viewport(width, aspect_ratio);
+    auto img = viewport.Render(ray_colorSN, Scene());
     write_ppm("sphere_normal_test.ppm", img);
     
-    img = std::vector<std::vector<RGB_float>>(height);
-    for (int j : tqdm::range(height))
-    {
-        std::vector<RGB_float> row(width);
-
-        for (int i = 0; i < width; ++i)
-        {
-            auto u = double(i) / (width - 1);
-            auto v = double(height - 1 - j) / (height - 1);
-            Ray r(origin, lower_left_corner + horizontal * u + vertical * v - origin);
-            row[i] = ray_colorN(r);
-        }
-
-        img[j] = row;
-    }
+    img = viewport.Render(ray_colorN, Scene());
+    
     write_ppm("normal_test.ppm", img);
 }
 
@@ -201,8 +148,8 @@ void sphere_normal_test()
 void run_tests()
 {
 
-    std::vector<void (*)()> funcs = {write_test, viewport_test, sphere_test, sphere_normal_test};
-    for (const auto f : tqdm::tqdm(funcs))
+    std::vector<void (*)()> funcs = {write_test, viewport_test, sphere_test, sphere_normal_test, scene_test};
+    for (const auto f : funcs)
     {
         f();
     }

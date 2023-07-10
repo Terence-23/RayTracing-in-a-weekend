@@ -6,5 +6,6 @@
 #include<fstream>
 #include<iostream>
 #include<math.h>
+#include<algorithm>
 
 #endif

@@ -15,7 +15,7 @@ public:
     vec3(float x, float y, float z);
     vec3(const vec3& v) = default;
 
-    vec3 operator -();
+    vec3 operator -()const;
     vec3& operator +=(const vec3& v);
     vec3& operator *=(const double t);
     
@@ -31,11 +31,11 @@ public:
         return *this / this->length();
     }
 
-    inline vec3 operator+(const vec3 &v) {
+    inline vec3 operator+(const vec3 &v) const{
         return vec3(x + v.x, y + v.y, z + v.z);
     }
 
-    inline vec3 operator-(const vec3 &v) {
+    inline vec3 operator-(const vec3 &v) const{
         return vec3(x - v.x, y - v.y, z - v.z);
     }
 
@@ -47,25 +47,25 @@ public:
         return *this*(1/t);
     }
 
-    inline double dot(const vec3 &v) {
+    inline double dot(const vec3 &v) const{
         return x * v.x
             + y * v.y
             + z * v.z;
     }
 
-    inline vec3 cross( const vec3 &v) {
+    inline vec3 cross( const vec3 &v) const{
         return vec3(y * v.z - z * v.y,
                     z * v.x - x * v.z,
                     x * v.y - y * v.x);
     }
-    inline bool operator!=(const vec3& v){
+    inline bool operator!=(const vec3& v)const{
         return x != v.x || y != v.y || z != v.z;
     }
-    inline bool operator==(const vec3& v){
+    inline bool operator==(const vec3& v)const{
         return x == v.x && y == v.y && z == v.z;
     }
 };
 
-inline vec3 operator * (double t, vec3 v){
+inline vec3 operator * (double t, vec3 v) {
     return v*t;
 }

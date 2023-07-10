@@ -11,6 +11,6 @@ Ray::Ray(): origin(0, 0, 0), direction(0,0,0)
 {
 
 }
-vec3 Ray::at(double t){
+vec3 Ray::at(double t) const{
     return origin + direction * t;
 }

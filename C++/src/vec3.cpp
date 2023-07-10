@@ -11,7 +11,7 @@ vec3& vec3::operator*=(double t){
     return *this;
 }
 
-vec3 vec3::operator -(){
+vec3 vec3::operator -() const{
     return vec3(-x, -y, -z);
 }
 
