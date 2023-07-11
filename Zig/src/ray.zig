@@ -27,7 +27,7 @@ pub fn vec_len(v: Vec3) f32 {
 }
 
 pub fn unit_vec(v: Vec3) Vec3 {
-    return v * @splat(3, 1 / vec_len(v));
+    return v / @splat(3, vec_len(v));
 }
 
 pub const Ray = struct {

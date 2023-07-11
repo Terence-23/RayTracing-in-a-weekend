@@ -9,6 +9,17 @@ const vec = @import("ray.zig");
 const Ray = vec.Ray;
 const Vec3 = vec.Vec3;
 
+pub const Hit = struct {
+    t: f32,
+    normal: Vec3,
+    point: Vec3,
+    pub fn equal(self: *const Hit, oth: *const Hit) bool {
+        return vec.vec3_all(self.normal == oth.normal) and self.t == oth.t and vec.vec3_all(self.point == oth.point);
+    }
+};
+
+pub const NO_HIT = Hit{ .t = -1.0, .normal = Vec3{ 0, 0, 0 }, .point = Vec3{ 0, 0, 0 } };
+
 pub const Sphere = struct {
     origin: vec.Vec3,
     radius: f32,
@@ -31,15 +42,37 @@ pub const Sphere = struct {
         }
         var x: f32 = -1;
         if (a < 0.0) {
-            x = -b + sqrt(d) / a;
+            x = (-b + sqrt(d)) / a;
         } else {
-            x = -b - sqrt(d) / a;
+            x = (-b - sqrt(d)) / a;
         }
 
         if (x < 0.0) {
             return Vec3{ 0.0, 0.0, 0.0 };
         }
         return vec.unit_vec(r.at(x) - self.origin);
+    }
+    pub fn collision(self: *const Sphere, r: Ray, mint: f32, maxt: f32) Hit {
+        var oc = r.origin - self.origin;
+        var a = vec.dot_product(r.direction, r.direction);
+        var b = vec.dot_product(oc, r.direction);
+        var c = vec.dot_product(oc, oc) - self.radius * self.radius;
+        var d = b * b - a * c;
+
+        if (d < 0.0) {
+            return NO_HIT;
+        }
+        var x: f32 = -1;
+        if (a < 0.0) {
+            x = (-b + sqrt(d)) / a;
+        } else {
+            x = (-b - sqrt(d)) / a;
+        }
+
+        if (x < mint or x > maxt) {
+            return NO_HIT;
+        }
+        return Hit{ .t = x, .normal = vec.unit_vec(r.at(x) - self.origin), .point = r.at(x) };
     }
 };
 

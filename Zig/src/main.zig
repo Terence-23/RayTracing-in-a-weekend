@@ -1,6 +1,7 @@
 const zigimg = @import("zigimg");
 const ray = @import("ray.zig");
-const sphere = @import("sphere.zig");
+const object = @import("object.zig");
+const viewport = @import("viewport.zig");
 
 const std = @import("std");
 
@@ -53,9 +54,11 @@ pub fn main() !void {
 
     try ray.viewport_test();
 
-    try sphere.sphere_test();
+    try object.sphere_test();
 
-    try sphere.sphere_test_normal();
+    try object.sphere_test_normal();
+
+    try viewport.sceneTest();
 
     std.debug.print("Run `zig build test` to run the tests.\n", .{});
 }
