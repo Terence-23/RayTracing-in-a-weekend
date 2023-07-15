@@ -7,6 +7,7 @@ const Progress = @import("progress");
 
 const zig_col = zigimg.color;
 const rgb = zig_col.Rgb24;
+const rand_gen = std.rand.DefaultPrng;
 
 const Ray = ray.Ray;
 const Vec3 = ray.Vec3;
@@ -24,8 +25,9 @@ pub const Viewport = struct {
     width: u32,
     height: u32,
     aspect_ratio: f32,
+    samples: usize,
 
-    pub fn Render(self: *Viewport, comptime color_f: fn (ray: Ray, scene: Scene) rgb, scene: Scene, path: []const u8) !void {
+    pub fn Render(self: *Viewport, comptime color_f: fn (ray: Ray, scene: Scene) Vec3, scene: Scene, path: []const u8) !void {
         var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
         var aspect_ratio: f32 = self.aspect_ratio;
@@ -43,23 +45,29 @@ pub const Viewport = struct {
             origin - horizontal / @splat(3, @as(f32, 2.0)) - vertical / @splat(3, @as(f32, 2.0)) - Vec3{ 0.0, 0.0, focal_length };
 
         var stdout = std.io.getStdOut().writer();
-        var pb = Progress.init(stdout);
+        var pb = Progress.init(stdout, "Writing to disk");
         pb.total = height;
         pb.width = 50;
         pb.display_fraction = true;
         try stdout.writeByte('\n');
 
+        std.debug.print("\nimg size: {}, w: {}, h: {}\n", .{ width * height, width, height });
         var pix = try std.ArrayList(rgb).initCapacity(gpa.allocator(), height * width);
         defer pix.deinit();
 
         for (0..height) |j| {
             _ = try pb.next();
+            var rnd = rand_gen.init(0);
             for (0..width) |i| {
-                var r = Ray{ .origin = origin, .direction = lower_left_corner +
-                    horizontal * @splat(3, @intToFloat(f32, i) / @intToFloat(f32, (width - 1))) +
-                    vertical * @splat(3, (@intToFloat(f32, height - 1 - j) / @intToFloat(f32, (height - 1)))) };
-                var col = color_f(r, scene);
-                try pix.append(col);
+                var col = Vec3{ 0.0, 0.0, 0.0 };
+                for (0..self.samples) |_| {
+                    var r = Ray{ .origin = origin, .direction = lower_left_corner +
+                        horizontal * @splat(3, (@intToFloat(f32, i) + rnd.random().float(f32)) / @intToFloat(f32, (width - 1))) +
+                        vertical * @splat(3, ((@intToFloat(f32, height - 1 - j) + rnd.random().float(f32)) / @intToFloat(f32, (height - 1)))) };
+                    col += color_f(r, scene);
+                }
+
+                try pix.append(ray.vec_to_rgb(col / @splat(3, @intToFloat(f32, self.samples))));
             }
         }
         try stdout.writeByte('\n');
@@ -76,7 +84,7 @@ pub const Viewport = struct {
     }
 };
 
-fn ray_color(r: Ray, scene: Scene) rgb {
+fn ray_color(r: Ray, scene: Scene) Vec3 {
     const mint = 0;
     const maxt = 1000;
     var min_hit = object.NO_HIT;
@@ -93,17 +101,20 @@ fn ray_color(r: Ray, scene: Scene) rgb {
     if (min_hit.equal(&object.NO_HIT)) {
         var unit_direction = ray.unit_vec(r.direction);
         var t = 0.5 * (unit_direction[1] + 1.0);
-        return rgb{ .r = @floatToInt(u8, 255 * ((1.0 - t) + t * 0.5)), .g = @floatToInt(u8, 255 * ((1.0 - t) + t * 0.7)), .b = 255 };
+        return Vec3{ (1.0 - t) + t * 0.5, ((1.0 - t) + t * 0.7), 1.0 };
     } else {
         var n = min_hit.normal;
-        return rgb{ .r = @floatToInt(u8, 255 * (0.5 * (n[0] + 1.0))), .g = @floatToInt(u8, 255 * (0.5 * (n[1] + 1.0))), .b = @floatToInt(u8, 255 * (0.5 * (n[2] + 1.0))) };
+        return Vec3{ 0.5 * (n[0] + 1.0), (0.5 * (n[1] + 1.0)), 0.5 * (n[2] + 1.0) };
     }
 }
 
 pub fn sceneTest() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
-    var view = Viewport{ .width = 900, .height = 600, .aspect_ratio = 900.0 / 600.0 };
+    const w = 900;
+    const h = 600;
+    const samples = 100;
+    var view = Viewport{ .width = w, .height = h, .aspect_ratio = @intToFloat(f32, w) / @intToFloat(f32, h), .samples = samples };
     var spheres = try std.ArrayList(Sphere).initCapacity(gpa.allocator(), 4);
     try spheres.append(Sphere{ .origin = Vec3{ 0.5, 0.0, -1.0 }, .radius = 0.5 });
     try spheres.append(Sphere{ .origin = Vec3{ -0.5, 0.0, -1.0 }, .radius = 0.5 });

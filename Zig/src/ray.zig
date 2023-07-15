@@ -14,6 +14,11 @@ pub fn dot_product(v: Vec3, u: Vec3) f32 {
 pub fn vec3_all(v: @Vector(3, bool)) bool {
     return v[0] and v[1] and v[2];
 }
+
+pub fn vec_to_rgb(v: Vec3) rgb {
+    return rgb{ .r = @floatToInt(u8, 255 * v[0]), .g = @floatToInt(u8, 255 * v[1]), .b = @floatToInt(u8, 255 * v[2]) };
+}
+
 pub fn cross_product(v: Vec3, u: Vec3) Vec3 {
     return Vec3{
         v.y * u.z - v.z * u.y,
@@ -62,7 +67,7 @@ pub fn viewport_test() !void {
         origin - horizontal / @splat(3, @as(f32, 2.0)) - vertical / @splat(3, @as(f32, 2.0)) - Vec3{ 0.0, 0.0, focal_length };
 
     var stdout = std.io.getStdOut().writer();
-    var pb = Progress.init(stdout);
+    var pb = Progress.init(stdout, "");
     pb.total = height;
     pb.width = 50;
     pb.display_fraction = true;

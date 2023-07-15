@@ -104,7 +104,7 @@ pub fn sphere_test() !void {
         origin - horizontal / @splat(3, @as(f32, 2.0)) - vertical / @splat(3, @as(f32, 2.0)) - vec.Vec3{ 0.0, 0.0, focal_length };
 
     var stdout = std.io.getStdOut().writer();
-    var pb = Progress.init(stdout);
+    var pb = Progress.init(stdout, "");
     pb.total = height;
     pb.width = 50;
     pb.display_fraction = true;
@@ -171,7 +171,7 @@ pub fn sphere_test_normal() !void {
         origin - horizontal / @splat(3, @as(f32, 2.0)) - vertical / @splat(3, @as(f32, 2.0)) - vec.Vec3{ 0.0, 0.0, focal_length };
 
     var stdout = std.io.getStdOut().writer();
-    var pb = Progress.init(stdout);
+    var pb = Progress.init(stdout, "");
     pb.total = height;
     pb.width = 50;
     pb.display_fraction = true;
