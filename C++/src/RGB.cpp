@@ -14,9 +14,9 @@ RGB_int::RGB_int(int r, int g, int b)
 // }
 
 RGB_int::RGB_int(RGB_float rgb ){
-    this->R =static_cast<int>(255.999 * rgb.R); 
-    this->G = static_cast<int>(255.999 * rgb.G); 
-    this->B = static_cast<int>(255.999 * rgb.B);
+    this->R =static_cast<int>(255 * rgb.R); 
+    this->G = static_cast<int>(255 * rgb.G); 
+    this->B = static_cast<int>(255 * rgb.B);
 }
 
 

@@ -17,7 +17,9 @@ void write_ppm(std::ostream &stream, const std::vector<std::vector<RGB_float>>& 
     for(auto v: vec){
 
         for(auto col:v){
-            stream << RGB_int(col) << "  ";
+            auto int_col = RGB_int(col);
+            // std::cerr << col << " " << int_col << '\n';
+            stream << int_col << "  ";
         }
         stream << '\n';
     }

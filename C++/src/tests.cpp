@@ -39,14 +39,16 @@ RGB_float ray_colorV(const Ray &r, const Scene& _scene)
 {
     vec3 unit_direction = r.direction.unit_vector();
     auto t = 0.5 * (unit_direction.y + 1.0);
-    return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
+    color pix = (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
+    if (pix.R > 1 || pix.G > 1 || pix.B > 1) throw -1;
+    return pix;
 }
 
 void viewport_test()
 {
     f32 aspect_ratio = 3.0 / 2;
     int width = 600;
-    Viewport viewport(width, aspect_ratio);
+    Viewport viewport(width, aspect_ratio, 1);
     auto img = viewport.Render(ray_colorV, Scene());
     write_ppm("viewport_test.ppm", img);
 }
@@ -66,7 +68,7 @@ void sphere_test()
 {
     f32 aspect_ratio = 3.0 / 2;
     int width = 600;
-    Viewport viewport(width, aspect_ratio);
+    Viewport viewport(width, aspect_ratio, 1);
     auto img = viewport.Render(ray_colorS, Scene());
     write_ppm("sphere_test.ppm", img);
 }
@@ -98,13 +100,14 @@ void scene_test()
 {
     f32 aspect_ratio = 3.0 / 2;
     int width = 900;
+    uint samples = 100;
     Scene scene;
     std::vector<Sphere> spheres = {
         Sphere(vec3(-0.5, 0, -1), 0.5), 
         Sphere(vec3(0.5, 0, -1), 0.5), 
         Sphere(vec3(0, 0, -2), 1)};
     scene.spheres = spheres;
-    Viewport viewport(width, aspect_ratio);
+    Viewport viewport(width, aspect_ratio, samples);
     auto img = viewport.Render(ray_colorSc, scene);
     write_ppm("scene_test.ppm", img);
 }
@@ -135,7 +138,7 @@ void sphere_normal_test()
 {
     f32 aspect_ratio = 3.0 / 2;
     int width = 600;
-    Viewport viewport(width, aspect_ratio);
+    Viewport viewport(width, aspect_ratio, 1);
     auto img = viewport.Render(ray_colorSN, Scene());
     write_ppm("sphere_normal_test.ppm", img);
     
@@ -153,4 +156,5 @@ void run_tests()
     {
         f();
     }
+    // funcs[1]();
 }

@@ -13,8 +13,18 @@ class RGB_float{
     inline RGB_float operator*(double t)const{
         return RGB_float(t*R, t*G, t*B);
     }
+    inline RGB_float operator/(double t)const{
+        return RGB_float(R/t, G/t, B/t);
+    }
     inline RGB_float operator+(RGB_float col)const{
         return RGB_float(R+col.R, G+col.G, B+col.B);
+    }
+    inline void operator+=(RGB_float col){
+        *this = RGB_float(R+col.R, G+col.G, B+col.B);
+    }
+    friend std::ostream & operator <<( std::ostream & os, const RGB_float & col ){    
+        os << col.R << ' ' << col.G << ' ' << col.B;
+        return os;
     }
 
 };
