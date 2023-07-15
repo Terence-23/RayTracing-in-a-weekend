@@ -3,6 +3,8 @@ pub mod viewport{
     use crate::vec3::{ray::Ray, vec3::Vec3};
     use image::Rgb;
     use indicatif::{ProgressBar, ProgressStyle};
+    use rand;
+    use rand::Rng;
 
     use crate::write_img::img_writer::write_img_f32;
     use crate::objects::objects::{NO_HIT, Sphere, Object};
@@ -11,9 +13,10 @@ pub mod viewport{
 
     pub struct Viewport{
         #[allow(dead_code)]
-        aspect_ratio:f32,
-        width :u64,
-        height :u64,
+        pub samples:usize,
+        pub aspect_ratio:f32,
+        pub width :u64,
+        pub height :u64,
 
         origin :Vec3,
         horizontal :Vec3,
@@ -26,7 +29,7 @@ pub mod viewport{
     }
 
     impl Viewport{
-        pub fn new(width:u64, aspect_ratio:f32)-> Self{
+        pub fn new(width:u64, aspect_ratio:f32, samples: usize)-> Self{
             
             let viewport_height = 2.0;
             let viewport_width = aspect_ratio * viewport_height;
@@ -39,6 +42,7 @@ pub mod viewport{
                 origin - horizontal / 2_f32 - vertical / 2_f32 - Vec3::new(0.0, 0.0, focal_length);
             
             Self{
+                samples: samples,
                 aspect_ratio: aspect_ratio,
                 width: width,
                 height: (width as f32 / aspect_ratio) as u64,
@@ -50,8 +54,8 @@ pub mod viewport{
                 lower_left_corner:lower_left_corner,
             }
         }
-        pub fn new_from_res(width:u64, height:u64) -> Self{
-            Self::new(width, width as f32 / height as f32)
+        pub fn new_from_res(width:u64, height:u64, samples:usize) -> Self{
+            Self::new(width, width as f32 / height as f32, samples)
         }
 
         pub fn render(&self, ray_color: &dyn Fn(Ray, &Scene)->Rgb<f32>, scene: Scene) -> Img{
@@ -69,14 +73,20 @@ pub mod viewport{
             for j in 0..self.height {
                 pb.inc(1);
                 let mut row = Vec::new();
+                let mut rng = rand::thread_rng();
+
                 for i in 0..self.width {
-                    let r = Ray::new(
-                        self.origin,
-                        self.lower_left_corner
-                            + self.horizontal * (i as f32 / (self.width - 1) as f32)
-                            + self.vertical * ((self.height - 1 - j) as f32 / (self.height - 1) as f32),
-                    );
-                    row.push(ray_color(r, &scene));
+                    let mut color = Vec3{x:0.0, y: 0.0, z:0.0};
+                    for _ in 0..self.samples{
+                        let r = Ray::new(
+                            self.origin,
+                            self.lower_left_corner
+                                + self.horizontal * ((i as f32 + rng.gen::<f32>()) / (self.width - 1) as f32)
+                                + self.vertical * (((self.height - 1 - j) as f32 + rng.gen::<f32>()) / (self.height - 1) as f32),
+                        );
+                        color += Vec3::from_rgb(ray_color(r, &scene));
+                    }
+                    row.push((color / self.samples as f32).to_rgb());
                 }
                 img.push(row);
             }
@@ -117,7 +127,7 @@ pub mod viewport{
 
 
     pub fn test_viewport_object(){
-
+        let samples = 100;
         let spheres  = vec!{
             Sphere{
                 origin: Vec3 {
@@ -153,7 +163,7 @@ pub mod viewport{
             }
         };
         let scene = Scene{spheres: spheres};
-        let viewport = Viewport::new_from_res(800, 600);
+        let viewport = Viewport::new_from_res(800, 600, samples);
 
         let img = viewport.render(&ray_color, scene);
 

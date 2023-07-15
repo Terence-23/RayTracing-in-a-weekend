@@ -1,6 +1,8 @@
 #[allow(dead_code)]
 pub mod vec3 {
     use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+
+    use image::Rgb;
     #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vec3 {
         pub x: f32,
@@ -93,6 +95,9 @@ pub struct Vec3 {
         pub fn new(x: f32, y: f32, z: f32) -> Self {
             Self { x, y, z }
         }
+        pub fn to_rgb(&self) ->Rgb<f32>{
+            Rgb([self.x, self.y, self.z])
+        }
 
         pub fn length(&self) -> f32 {
             (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
@@ -109,6 +114,9 @@ pub struct Vec3 {
         }
         pub fn unit(&self) -> Vec3 {
             *self / self.length()
+        }
+        pub fn from_rgb(col: Rgb<f32>) -> Vec3 {
+            Vec3{x:col.0[0], y:col.0[1], z:col.0[2]}
         }
     }
 }
