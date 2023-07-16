@@ -8,7 +8,7 @@ use vec3::ray::viewport_test;
 mod objects;
 use objects::objects::{sphere_test, sphere_test_normal};
 mod viewport;
-use viewport::viewport::test_viewport_object;
+use viewport::viewport::{test_viewport_object,diffuse_test};
 
 
 fn main() {
@@ -18,5 +18,6 @@ fn main() {
     sphere_test();
     sphere_test_normal();
     test_viewport_object();
+    diffuse_test();
     println!("Success");
 }

@@ -1,6 +1,7 @@
 #[allow(dead_code)]
 pub mod vec3 {
     use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+    use rand::random;
 
     use image::Rgb;
     #[derive(Debug, Clone, Copy, PartialEq)]
@@ -54,6 +55,17 @@ pub struct Vec3 {
                 x: self.x * rhs,
                 y: self.y * rhs,
                 z: self.z * rhs,
+            }
+        }
+    }
+    impl Mul for Vec3 {
+        type Output = Self;
+
+        fn mul(self, rhs: Vec3) -> Self {
+            Self {
+                x: self.x * rhs.x,
+                y: self.y * rhs.y,
+                z: self.z * rhs.z,
             }
         }
     }
@@ -118,6 +130,21 @@ pub struct Vec3 {
         pub fn from_rgb(col: Rgb<f32>) -> Vec3 {
             Vec3{x:col.0[0], y:col.0[1], z:col.0[2]}
         }
+        pub fn random(min: f32, max:f32) ->Vec3{
+            Vec3 { x: random::<f32>() * (max - min) + min, y: random::<f32>() * (max - min) + min, z: random::<f32>() * (max - min) + min }
+        }
+        pub fn random_unit_vec() ->Vec3{
+            // println!("rand_vec");
+            return loop{
+                let p = Vec3::random(-1.0,1.0);
+                // println!("vec: {:?}, len: {}", p, p.x * p.x + p.y * p.y + p.z * p.z);
+                if (p.x * p.x + p.y * p.y + p.z * p.z) <= 1.0 {
+                    break p;
+                }
+            }.unit();
+            // return p.unit();
+        }
+
     }
 }
 #[allow(dead_code)]
