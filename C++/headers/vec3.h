@@ -3,11 +3,11 @@
 // #include "external_includes.h"
 #include <iostream>
 #include <cmath>
+#include <defines.h>
 
 class vec3{
 
 private:
-    double length2()const;
 
 public:
     float x, y, z; 
@@ -22,6 +22,8 @@ public:
     vec3& operator /=(const double t);
 
     double length()const;
+    double length2()const;
+
     friend std::ostream & operator <<( std::ostream & os, const vec3 & v ){    
         os << v.x << ' ' << v.y << ' ' << v.z;
         return os;
@@ -64,6 +66,16 @@ public:
     inline bool operator==(const vec3& v)const{
         return x == v.x && y == v.y && z == v.z;
     }
+
+    inline static vec3 random() {
+        return vec3(random_double(), random_double(), random_double());
+    }
+
+    inline static vec3 random(double min, double max) {
+        return vec3(random_double(min,max), random_double(min,max), random_double(min,max));
+    }
+    static vec3 random_in_unit_sphere();
+    static vec3 random_unit_vec();
 };
 
 inline vec3 operator * (double t, vec3 v) {

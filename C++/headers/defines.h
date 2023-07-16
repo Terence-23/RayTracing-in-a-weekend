@@ -5,6 +5,7 @@
 #include<cstdlib>
 #include<limits>
 
+
 // Constants
 
 const double infinity = std::numeric_limits<double>::infinity();
@@ -32,8 +33,6 @@ inline double clamp(double x, double min, double max) {
     return x;
 }
 
-inline bool col_in_range(RGB_float pix){
-    return pix.R <= 1 && pix.G <= 1 && pix.B <= 1;
-}
+
 
 #endif

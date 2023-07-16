@@ -25,6 +25,19 @@ double vec3::length2() const
     return x*x + y*y + z*z;
 }
 
+vec3 vec3::random_in_unit_sphere() {
+    while (true) {
+        auto p = vec3::random(-1,1);
+        if (p.length2() >= 1) continue;
+        return p;
+    }
+}
+
+vec3 vec3::random_unit_vec()
+{
+    return vec3::random_in_unit_sphere().unit_vector();
+}
+
 vec3::vec3() : x(0), y(0), z(0)
 {
 }

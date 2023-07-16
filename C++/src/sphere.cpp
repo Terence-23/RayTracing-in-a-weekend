@@ -26,5 +26,9 @@ const Hit Sphere::collisionNormal(const Ray& ray, float mint, float maxt) const
 
     if (x < mint || x > maxt) return NO_HIT;
 
-    return Hit(x, (ray.at(x) - origin).unit_vector(), ray.at(x));
+    Hit hit = Hit(x, (ray.at(x) - origin).unit_vector(), ray.at(x));
+    hit.next = this->material(hit);
+    hit.col_mod =this->col_mod;
+    if (std::isnan(hit.t)) throw -1;
+    return hit;
 }

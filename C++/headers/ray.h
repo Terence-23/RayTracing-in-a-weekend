@@ -12,6 +12,16 @@ public:
 
     vec3 at(double t) const;
 
+    inline bool operator==(Ray o) const {
+        return origin == o.origin && direction == o.direction;
+    }
+    inline bool operator!=(Ray o) const {
+        return origin != o.origin || direction != o.direction;
+    }
+    friend std::ostream & operator <<( std::ostream & os, const Ray & v ){    
+        os << v.origin << ' ' << v.direction;
+        return os;
+    }
 
 };
 

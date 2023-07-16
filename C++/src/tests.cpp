@@ -35,7 +35,7 @@ void write_test()
     write_ppm("int_cols.ppm", colors_int);
 }
 
-RGB_float ray_colorV(const Ray &r, const Scene& _scene)
+RGB_float ray_colorV(const Ray &r, const Scene& _scene, uint _depth, uint _max_depth)
 {
     vec3 unit_direction = r.direction.unit_vector();
     auto t = 0.5 * (unit_direction.y + 1.0);
@@ -53,7 +53,7 @@ void viewport_test()
     write_ppm("viewport_test.ppm", img);
 }
 
-RGB_float ray_colorS(const Ray &r, const Scene& _scene)
+RGB_float ray_colorS(const Ray &r, const Scene& _scene, uint _depth, uint _max_depth)
 {
 
     if (Sphere(vec3(0, 0, -1), 0.5).collide(r))
@@ -73,7 +73,7 @@ void sphere_test()
     write_ppm("sphere_test.ppm", img);
 }
 
-RGB_float ray_colorSc(const Ray &r, const Scene& scene)
+RGB_float ray_colorSc(const Ray &r, const Scene& scene, uint _depth, uint _max_depth)
 {
     float mint = 0, maxt = 1000;
     std::vector<Hit> hits;
@@ -112,7 +112,7 @@ void scene_test()
     write_ppm("scene_test.ppm", img);
 }
 
-RGB_float ray_colorSN(const Ray &r, const Scene& _scene)
+RGB_float ray_colorSN(const Ray &r, const Scene& _scene, uint _depth, uint _max_depth)
 {
     
     vec3 normal = Sphere(vec3(0, 0, -1), 0.5).collisionNormal(r, 0, 1000).normal;
@@ -123,7 +123,7 @@ RGB_float ray_colorSN(const Ray &r, const Scene& _scene)
     return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
 }
 
-RGB_float ray_colorN(const Ray &r, const Scene& _scene)
+RGB_float ray_colorN(const Ray &r, const Scene& _scene, uint _depth, uint _max_depth)
 {
     
     vec3 normal = Sphere(vec3(0, 0, 1), 0.5).collisionNormal(r, 0, 1000).normal;
@@ -147,14 +147,60 @@ void sphere_normal_test()
     write_ppm("normal_test.ppm", img);
 }
 
+RGB_float ray_colorD(const Ray &r, const Scene& scene, uint depth, uint max_depth)
+{
+    // std::cout << r << '\n';
+    if (depth >= max_depth) {
+        // auto t = 0.5 * (r.direction.unit_vector().y + 1.0);
+        // return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
+        return RGB_float(0,0,0);
+    }
+    float mint = 0.001, maxt = 1000;
+    Hit min_hit = NO_HIT;
+    for(auto s: scene.spheres){
+        Hit hit = s.collisionNormal(r, mint, maxt);
+        if(hit.isHit() && (!min_hit.isHit() || hit.t < min_hit.t)){
+            min_hit = hit;
+        }
+    }
+
+    if (min_hit.isHit()){
+        
+        RGB_float col = ray_colorD(min_hit.next, scene, depth+1, max_depth) * min_hit.col_mod;
+        
+        return col;
+    }
+    auto t = 0.5 * (r.direction.unit_vector().y + 1.0);
+    return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
+}
+
+
+void diffuse_test()
+{
+    // uint height = 600;
+    f32 aspect_ratio = 3.0 / 2;
+    int width = 900;
+    uint samples = 100;
+    Scene scene;
+    std::vector<Sphere> spheres = {
+        Sphere(vec3(-0.5, 0, -1), 0.5, materials::uniform_scatter, 0.6), 
+        Sphere(vec3(0.5, 0, -1), 0.5, materials::uniform_scatter, 1), 
+        Sphere(vec3(0, 0, -2), 1, materials::uniform_scatter, 0.2)};
+    scene.spheres = spheres;
+    // Viewport viewport(width, height, samples, 10);
+    Viewport viewport(width, aspect_ratio, samples, 10);
+    auto img = viewport.Render(ray_colorD, scene);
+    write_ppm("diffuse_test.ppm", img);
+}
+
 
 void run_tests()
 {
 
-    std::vector<void (*)()> funcs = {write_test, viewport_test, sphere_test, sphere_normal_test, scene_test};
-    for (const auto f : funcs)
-    {
-        f();
-    }
-    // funcs[1]();
+    std::vector<void (*)()> funcs = {write_test, viewport_test, sphere_test, sphere_normal_test, scene_test, diffuse_test};
+    // for (const auto f : funcs)
+    // {
+    //     f();
+    // }
+    funcs[5]();
 }

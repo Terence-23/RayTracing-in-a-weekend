@@ -3,6 +3,7 @@
 
 // #include"external_includes.h"
 
+#include<cmath>
 #include <iostream>
 
 class RGB_float{
@@ -26,6 +27,9 @@ class RGB_float{
         os << col.R << ' ' << col.G << ' ' << col.B;
         return os;
     }
+    RGB_float gamma(float inv_g){
+        return RGB_float(std::pow(R, inv_g), std::pow(G, inv_g), std::pow(B, inv_g));
+    }
 
 };
 
@@ -47,5 +51,9 @@ class RGB_int{
     }
 
 };
+
+inline bool col_in_range(RGB_float pix){
+    return pix.R <= 1 && pix.G <= 1 && pix.B <= 1;
+}
 
 #endif

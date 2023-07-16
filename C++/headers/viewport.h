@@ -17,16 +17,31 @@ public:
     float aspect_ratio;
     uint width, height;
     uint samples_per_pixel;
+    uint max_reflections;
+    float gamma = 2;
 
     inline Viewport(uint width, uint height, uint samples) : width(width),
                                                              height(height),
                                                              aspect_ratio(width / float(height)),
-                                                             samples_per_pixel(samples) {}
+                                                             samples_per_pixel(samples),
+                                                             max_reflections(10) {}
+
+    inline Viewport(uint width, uint height, uint samples, uint max_reflections) : width(width),
+                                                             height(height),
+                                                             aspect_ratio(width / float(height)),
+                                                             samples_per_pixel(samples),
+                                                             max_reflections(max_reflections) {}
 
     inline Viewport(uint width, float aspect_ratio, uint samples) : width(width),
                                                                     aspect_ratio(aspect_ratio),
                                                                     height(static_cast<int>(width / aspect_ratio)),
                                                                     samples_per_pixel(samples) {}
+    
+    inline Viewport(uint width, float aspect_ratio, uint samples, uint max_reflections) : width(width),
+                                                                    aspect_ratio(aspect_ratio),
+                                                                    height(static_cast<int>(width / aspect_ratio)),
+                                                                    samples_per_pixel(samples),
+                                                                    max_reflections(max_reflections) {}
 
-    Img Render(RGB_float (*ray_color)(const Ray &r, const Scene &scene), const Scene &scene);
+    Img Render(RGB_float (*ray_color)(const Ray &r, const Scene &scene, uint, uint), const Scene &scene);
 };

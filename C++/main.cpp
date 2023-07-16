@@ -6,6 +6,7 @@
 #include"headers/tests.h"
 
 int main(){
+    std::ios::sync_with_stdio(false);
     #ifdef DEBUG
         run_tests();
     #endif
