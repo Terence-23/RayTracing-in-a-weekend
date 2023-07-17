@@ -8,6 +8,7 @@ const Progress = @import("progress");
 const zig_col = zigimg.color;
 const rgb = zig_col.Rgb24;
 const rand_gen = std.rand.DefaultPrng;
+const pow = std.math.pow;
 
 const Ray = ray.Ray;
 const Vec3 = ray.Vec3;
@@ -20,14 +21,19 @@ pub const Scene = struct {
         self.spheres.deinit();
     }
 };
+fn gamma(vec: Vec3, inv_g: f32) Vec3 {
+    return Vec3{ pow(f32, vec[0], inv_g), pow(f32, vec[1], inv_g), pow(f32, vec[2], inv_g) };
+}
 
 pub const Viewport = struct {
     width: u32,
     height: u32,
     aspect_ratio: f32,
     samples: usize,
+    depth: usize = 10,
+    gamma: f32 = 2,
 
-    pub fn Render(self: *Viewport, comptime color_f: fn (ray: Ray, scene: Scene) Vec3, scene: Scene, path: []const u8) !void {
+    pub fn Render(self: *Viewport, comptime color_f: fn (ray: Ray, scene: Scene, usize) Vec3, scene: Scene, path: []const u8) !void {
         var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
         var aspect_ratio: f32 = self.aspect_ratio;
@@ -43,7 +49,7 @@ pub const Viewport = struct {
         var vertical: Vec3 = .{ 0.0, viewport_height, 0.0 };
         var lower_left_corner =
             origin - horizontal / @splat(3, @as(f32, 2.0)) - vertical / @splat(3, @as(f32, 2.0)) - Vec3{ 0.0, 0.0, focal_length };
-
+        var inv_g = 1 / self.gamma;
         var stdout = std.io.getStdOut().writer();
         var pb = Progress.init(stdout, "Writing to disk");
         pb.total = height;
@@ -52,7 +58,7 @@ pub const Viewport = struct {
         try stdout.writeByte('\n');
 
         std.debug.print("\nimg size: {}, w: {}, h: {}\n", .{ width * height, width, height });
-        var pix = try std.ArrayList(rgb).initCapacity(gpa.allocator(), height * width);
+        var pix = try std.ArrayList(Vec3).initCapacity(gpa.allocator(), height * width);
         defer pix.deinit();
 
         for (0..height) |j| {
@@ -64,10 +70,10 @@ pub const Viewport = struct {
                     var r = Ray{ .origin = origin, .direction = lower_left_corner +
                         horizontal * @splat(3, (@intToFloat(f32, i) + rnd.random().float(f32)) / @intToFloat(f32, (width - 1))) +
                         vertical * @splat(3, ((@intToFloat(f32, height - 1 - j) + rnd.random().float(f32)) / @intToFloat(f32, (height - 1)))) };
-                    col += color_f(r, scene);
+                    col += color_f(r, scene, self.depth);
                 }
 
-                try pix.append(ray.vec_to_rgb(col / @splat(3, @intToFloat(f32, self.samples))));
+                try pix.append(col / @splat(3, @intToFloat(f32, self.samples)));
             }
         }
         try stdout.writeByte('\n');
@@ -77,14 +83,15 @@ pub const Viewport = struct {
         defer img.deinit();
 
         for (img.pixels.rgb24, pix.items) |*ptr, val| {
-            ptr.* = val;
+            ptr.* = ray.vec_to_rgb(gamma(val, inv_g));
         }
         const enc_otp = zigimg.png.PNG.EncoderOptions{};
         try img.writeToFilePath(path, zigimg.AllFormats.ImageEncoderOptions{ .png = enc_otp });
     }
 };
 
-fn ray_color(r: Ray, scene: Scene) Vec3 {
+fn ray_color(r: Ray, scene: Scene, depth: usize) Vec3 {
+    _ = depth;
     const mint = 0;
     const maxt = 1000;
     var min_hit = object.NO_HIT;
