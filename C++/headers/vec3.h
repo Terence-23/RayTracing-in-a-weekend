@@ -3,7 +3,8 @@
 // #include "external_includes.h"
 #include <iostream>
 #include <cmath>
-#include <defines.h>
+#include "defines.h"
+#include "RGB.h"
 
 class vec3{
 
@@ -27,6 +28,11 @@ public:
     friend std::ostream & operator <<( std::ostream & os, const vec3 & v ){    
         os << v.x << ' ' << v.y << ' ' << v.z;
         return os;
+    }
+    inline bool near_zero() const {
+        // Return true if the vector is close to zero in all dimensions.
+        const auto s = 1e-8;
+        return (fabs(x) < s) && (fabs(y) < s) && (fabs(z) < s);
     }
 
     inline vec3 unit_vector() const{
@@ -76,8 +82,16 @@ public:
     }
     static vec3 random_in_unit_sphere();
     static vec3 random_unit_vec();
+    vec3 reflect(const vec3& n) const {
+        // reflect vector around a normal N
+        return *this - n * this->dot(n) * 2 ;
+    }
 };
 
 inline vec3 operator * (double t, vec3 v) {
     return v*t;
+}
+
+inline RGB_float operator * (RGB_float col, vec3 v) {
+    return RGB_float(col.R * v.x, col.G * v.y, col.B * v.z);
 }

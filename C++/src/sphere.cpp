@@ -18,7 +18,6 @@ const Hit Sphere::collisionNormal(const Ray& ray, float mint, float maxt) const
     auto discriminant = b*b - a*c;
     if (discriminant < 0) return NO_HIT;
     
-    
     auto x1 = (-b - sqrt(discriminant)) / (a);
     auto x2 = (-b + sqrt(discriminant)) / (a);
 
@@ -27,7 +26,11 @@ const Hit Sphere::collisionNormal(const Ray& ray, float mint, float maxt) const
     if (x < mint || x > maxt) return NO_HIT;
 
     Hit hit = Hit(x, (ray.at(x) - origin).unit_vector(), ray.at(x));
-    hit.next = this->material(hit);
+    Ray next = this->material(hit, ray);
+    if (next.direction.near_zero()){
+        next = hit.normal;
+    }
+    hit.next = next;
     hit.col_mod =this->col_mod;
     if (std::isnan(hit.t)) throw -1;
     return hit;

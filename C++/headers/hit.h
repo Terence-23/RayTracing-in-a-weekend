@@ -8,13 +8,13 @@ class Hit{
     
 public:
 
-    double t, col_mod;
-    vec3 normal, point;
+    double t;
+    vec3 normal, point, col_mod;
     Ray next;
 
     Hit() = default;
     inline Hit(float t, vec3 normal, vec3 point): t(t), normal(normal), point(point){}
-    inline Hit(float t, vec3 normal, vec3 point, float col_mod, Ray next): t(t), normal(normal), point(point), col_mod(col_mod), next(next){}
+    inline Hit(float t, vec3 normal, vec3 point, vec3 col_mod, Ray next): t(t), normal(normal), point(point), col_mod(col_mod), next(next){}
 
     bool isHit() const ;
     inline bool operator!=(Hit oth) const { return 
@@ -32,4 +32,4 @@ public:
         col_mod == o.col_mod;}
 
 };
-const Hit NO_HIT = Hit(10000, vec3(0,0,0), vec3(0,0,0), 1, Ray(vec3(0,0,0), vec3(0,0,0)));
+const Hit NO_HIT = Hit(10000, vec3(0,0,0), vec3(0,0,0), vec3(1,1,1), Ray(vec3(0,0,0), vec3(0,0,0)));

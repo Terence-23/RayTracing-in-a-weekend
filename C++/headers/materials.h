@@ -8,11 +8,12 @@
 
 namespace materials
 {
-    using material = Ray(*)(Hit);
+    using material = Ray(*)(Hit, Ray);
 
-    Ray uniform_scatter(Hit hit);
-    inline Ray empty(Hit hit){return Ray(vec3(0,0,0), vec3(0,0,0));}
-} // namespace materials
+    Ray uniform_scatter(Hit hit, Ray r);
+    inline Ray empty(Hit hit, Ray r){return Ray(vec3(0,0,0), vec3(0,0,0));}
+    Ray metalic(Hit, Ray);
+}
 
 
 
