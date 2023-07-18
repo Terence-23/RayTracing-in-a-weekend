@@ -1,5 +1,5 @@
 #include "viewport.h"
-#include "../lib/tqdm.cpp/include/tqdm/tqdm.h"
+#include "../lib/indicators/single_include/indicators/indicators.hpp"
 
 Img Viewport::Render(RGB_float (*ray_color)(const Ray &r, const Scene &scene, uint depth, uint max_depth), const Scene &scene)
 {
@@ -17,15 +17,32 @@ Img Viewport::Render(RGB_float (*ray_color)(const Ray &r, const Scene &scene, ui
     std::vector<std::vector<RGB_float>> img(height);
 
     float inv_g = 1/this->gamma;
+    using namespace indicators;
+    indicators::ProgressBar bar{
+        option::BarWidth{50},
+        option::Start{"["},
+        option::Fill{"="},
+        option::Lead{">"},
+        option::Remainder{"-"},
+        option::End{"]"},
+        option::PrefixText{"Rendering image "},
+        option::ForegroundColor{Color::green},
+        option::ShowElapsedTime{true},
+        option::ShowRemainingTime{true},
+        option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
+        option::MaxProgress{height}
+    };
 
-    for (int j : tqdm::range(height))
+    for (int j =0; j < height; j ++ )
     {
         std::vector<RGB_float> row(width);
+        bar.set_progress(j);
 
         for (int i = 0; i < width; ++i)
         {
             RGB_float pixel_color = RGB_float(0, 0, 0);
-
+            // set progress bar
+            
             for (int s = 0; s < samples_per_pixel; s++)
             {
                 auto u = (i + random_double()) / (width - 1);
@@ -42,5 +59,7 @@ Img Viewport::Render(RGB_float (*ray_color)(const Ray &r, const Scene &scene, ui
 
         img[j] = row;
     }
+    bar.mark_as_completed();
+    std::cout << "Done\n";
     return img;
 }

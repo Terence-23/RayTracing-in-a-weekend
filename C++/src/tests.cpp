@@ -211,14 +211,30 @@ void metal_test()
     write_ppm("metal_test.ppm", img);
 }
 
+class Test{
+    public:
+    const char* message;
+    void (*test_f)();
+    Test(const char* message,  void (*test_f)()): message(message), test_f(test_f){}
+    void run(){
+        std::cout << message << "\n";
+        test_f();
+    }
+};
+
 
 void run_tests()
 {
 
-    std::vector<void (*)()> funcs = {write_test, viewport_test, sphere_test, sphere_normal_test, scene_test, diffuse_test, metal_test};
-    for (const auto f : funcs)
-    {
-        f();
-    }
+    std::vector<Test> tests = {
+        Test("Write test", write_test), 
+        Test("Viewport test", viewport_test), 
+        Test("Sphere test", sphere_test), 
+        Test("Sphere normal test", sphere_normal_test), 
+        Test("Scene test", scene_test), 
+        Test("Diffuse material test", diffuse_test),
+        Test("Metal material test", metal_test)
+    };
+    for (auto t: tests) t.run();
     // funcs[6]();
 }
