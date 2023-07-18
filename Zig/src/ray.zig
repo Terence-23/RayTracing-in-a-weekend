@@ -11,6 +11,10 @@ pub fn dot_product(v: Vec3, u: Vec3) f32 {
     return v[0] * u[0] + v[1] * u[1] + v[2] * u[2];
 }
 
+pub fn reflect(v: Vec3, n: Vec3) Vec3 {
+    return v - n * @splat(3, dot_product(v, n) * 2.0);
+}
+
 pub fn vec3_all(v: @Vector(3, bool)) bool {
     return v[0] and v[1] and v[2];
 }

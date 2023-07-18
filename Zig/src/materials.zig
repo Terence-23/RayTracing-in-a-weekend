@@ -9,6 +9,7 @@ const NO_HIT = @import("object.zig").NO_HIT;
 const Ray = @import("ray.zig").Ray;
 const unit_vec = @import("ray.zig").unit_vec;
 const Vec3 = @Vector(3, f32);
+const vec = @import("ray.zig");
 
 pub fn rand_vec_unit() Vec3 {
     var prng = std.rand.DefaultPrng.init(@truncate(u64, @bitCast(u128, std.time.nanoTimestamp())));
@@ -20,10 +21,13 @@ pub fn rand_vec_unit() Vec3 {
     });
 }
 
-pub fn diffuse(h: Hit) Ray {
+pub fn diffuse(h: Hit, _: Ray) Ray {
     // println!("diff");
-    var target = h.point + h.normal + rand_vec_unit();
-    return Ray{ .origin = h.point, .direction = target - h.point };
+    var target = h.normal + rand_vec_unit();
+    return Ray{ .origin = h.point, .direction = target };
+}
+pub fn metal(h: Hit, r: Ray) Ray {
+    return Ray{ .origin = h.point, .direction = vec.reflect(vec.unit_vec(r.direction), h.normal) };
 }
 
 fn ray_color(r: Ray, scene: Scene, depth: usize) Vec3 {
@@ -48,7 +52,7 @@ fn ray_color(r: Ray, scene: Scene, depth: usize) Vec3 {
         var t = 0.5 * (unit_direction[1] + 1.0);
         return Vec3{ (1.0 - t) + t * 0.5, ((1.0 - t) + t * 0.7), 1.0 };
     } else {
-        return ray_color(min_hit.mat(min_hit), scene, depth - 1) * min_hit.col;
+        return ray_color(min_hit.mat(min_hit, r), scene, depth - 1) * min_hit.col;
     }
 }
 
@@ -70,3 +74,27 @@ pub fn diffuseTest() !void {
 
     try view.Render(ray_color, scene, "diffuse_test.png");
 }
+
+pub fn metalTest() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
+    const w = 800;
+    const h = 600;
+    const samples = 100;
+    var view = Viewport{ .width = w, .height = h, .aspect_ratio = @intToFloat(f32, w) / @intToFloat(f32, h), .samples = samples, .depth = 10 };
+    var spheres = try std.ArrayList(Sphere).initCapacity(gpa.allocator(), 4);
+    try spheres.append(Sphere{ .origin = Vec3{ -0.5, 0.0, -1.0 }, .radius = 0.5, .mat = diffuse, .col = Vec3{ 0.6, 0.6, 0.6 } });
+    try spheres.append(Sphere{ .origin = Vec3{ 0.5, 0.0, -1.0 }, .radius = 0.5, .mat = metal, .col = Vec3{ 0.5, 0.9, 0.9 } });
+    try spheres.append(Sphere{ .origin = Vec3{ 0.0, 0.0, -2.0 }, .radius = 1.0, .mat = diffuse, .col = Vec3{ 0.5, 1.0, 0.0 } });
+    try spheres.append(Sphere{ .origin = Vec3{ 0.0, 0.0, 0.0 }, .radius = 1.0 });
+
+    var scene = Scene{ .spheres = spheres };
+    defer scene.deinit();
+
+    try view.Render(ray_color, scene, "metal_test.png");
+}
+
+// Sphere::new(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.6, 0.6, 0.6)), Some(&diffuse)),
+// Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.5, 0.9, 0.9)), Some(&metal)),
+// Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(&diffuse)),
+// Sphere::new(Vec3 {x: 0.0, y: 0.0, z: 0.0,}, 1.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(&empty))

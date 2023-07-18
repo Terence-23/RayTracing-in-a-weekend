@@ -14,12 +14,11 @@ pub const Hit = struct {
     normal: Vec3,
     point: Vec3,
     col: Vec3 = Vec3{ 1.0, 1.0, 1.0 },
-    mat: *const fn (Hit) Ray = Hit.empty,
+    mat: *const fn (Hit, Ray) Ray = Hit.empty,
     pub fn equal(self: *const Hit, oth: *const Hit) bool {
         return vec.vec3_all(self.normal == oth.normal) and self.t == oth.t and vec.vec3_all(self.point == oth.point) and vec.vec3_all(self.col == oth.col) and self.mat == oth.mat;
     }
-    fn empty(h: Hit) Ray {
-        _ = h;
+    fn empty(_: Hit, _: Ray) Ray {
         const x: f32 = 0.0;
         return Ray{ .origin = @splat(3, x), .direction = @splat(3, x) };
     }
@@ -31,9 +30,8 @@ pub const Sphere = struct {
     origin: vec.Vec3,
     radius: f32,
     col: Vec3 = Vec3{ 1.0, 1.0, 1.0 },
-    mat: *const fn (Hit) Ray = Sphere.empty,
-    fn empty(h: Hit) Ray {
-        _ = h;
+    mat: *const fn (Hit, Ray) Ray = Sphere.empty,
+    fn empty(_: Hit, _: Ray) Ray {
         const x: f32 = 0.0;
         return Ray{ .origin = @splat(3, x), .direction = @splat(3, x) };
     }

@@ -9,6 +9,7 @@ const zig_col = zigimg.color;
 const rgb = zig_col.Rgb24;
 const rand_gen = std.rand.DefaultPrng;
 const pow = std.math.pow;
+const isNan = std.math.isNan;
 
 const Ray = ray.Ray;
 const Vec3 = ray.Vec3;
@@ -72,11 +73,11 @@ pub const Viewport = struct {
                         vertical * @splat(3, ((@intToFloat(f32, height - 1 - j) + rnd.random().float(f32)) / @intToFloat(f32, (height - 1)))) };
                     col += color_f(r, scene, self.depth);
                 }
-
+                if (isNan(col[0]) or isNan(col[1]) or isNan(col[2])) std.debug.print("NaN", .{});
                 try pix.append(col / @splat(3, @intToFloat(f32, self.samples)));
             }
         }
-        try stdout.writeByte('\n');
+        // try stdout.writeByte('\n');
 
         const allocator = gpa.allocator();
         var img = try zigimg.Image.create(allocator, width, height, zigimg.PixelFormat.rgb24);

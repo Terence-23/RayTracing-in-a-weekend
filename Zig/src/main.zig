@@ -63,6 +63,8 @@ pub fn main() !void {
 
     try materials.diffuseTest();
 
+    try materials.metalTest();
+
     std.debug.print("Run `zig build test` to run the tests.\n", .{});
 }
 
