@@ -144,6 +144,12 @@ pub struct Vec3 {
             }.unit();
             // return p.unit();
         }
+        pub fn reflect(&self, n: Vec3) -> Vec3{
+            *self - n * 2.0 * self.dot(n)
+        }
+        pub fn close_to_zero(&self) -> bool{
+            self.x.abs() < 1e-8 && self.y.abs() < 1e-8 && self.z.abs() < 1e-8
+        }
 
     }
 }

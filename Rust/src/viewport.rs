@@ -1,6 +1,6 @@
 pub mod viewport{
 
-    use crate::vec3::{ray::Ray, vec3::Vec3};
+    use crate::{vec3::{ray::Ray, vec3::Vec3}, objects::objects::materials::metal};
     use image::Rgb;
     use indicatif::{ProgressBar, ProgressStyle};
     use rand;
@@ -172,7 +172,7 @@ pub mod viewport{
         if hit != NO_HIT {
             let cm = hit.col_mod;
             // println!("depth: {}", depth);
-            return (Vec3::from_rgb(ray_color_d((hit.mat)(hit), scene, depth-1)) * cm).to_rgb();
+            return (Vec3::from_rgb(ray_color_d((hit.mat)(hit, r), scene, depth-1)) * cm).to_rgb();
         }
 
         let unit_direction = r.direction.unit();
@@ -194,6 +194,22 @@ pub mod viewport{
         let img = viewport.render(&ray_color_d, scene);
 
         write_img_f32(img, "diffuse_test.png".to_string());
+
+    }
+    pub fn metal_test(){
+        let samples = 100;
+        let spheres  = vec!{
+            Sphere::new(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.6, 0.6, 0.6)), Some(&diffuse)),
+            Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.5, 0.9, 0.9)), Some(&metal)),
+            Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(&diffuse)),
+            Sphere::new(Vec3 {x: 0.0, y: 0.0, z: 0.0,}, 1.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(&empty)),
+        };
+        let scene = Scene{spheres: spheres};
+        let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0);
+
+        let img = viewport.render(&ray_color_d, scene);
+
+        write_img_f32(img, "metal_test.png".to_string());
 
     }
 }

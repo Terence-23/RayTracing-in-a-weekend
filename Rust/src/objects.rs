@@ -13,7 +13,7 @@ pub mod objects {
         pub normal: Vec3,
         pub point: Vec3,
         pub col_mod: Vec3,
-        pub mat: &'a dyn Fn(Hit) -> Ray,
+        pub mat: &'a dyn Fn(Hit, Ray) -> Ray,
     }
 
 impl<'a> Debug for Hit<'a> {
@@ -54,15 +54,21 @@ impl<'a> Debug for Hit<'a> {
     }
     #[allow(dead_code)]
     pub mod materials{
-        use super::{Hit};
+        use super::Hit;
         use crate::vec3::{ray::Ray, vec3::Vec3};
-        pub fn empty(_hit: Hit) -> Ray{
+        pub fn empty(_hit: Hit, _:Ray) -> Ray{
             Ray{origin:Vec3 { x: 0.0, y: 0.0, z: 0.0 }, direction:Vec3 { x: 0.0, y: 0.0, z: 0.0 }}
         }
-        pub fn diffuse(hit :Hit) -> Ray{
+        pub fn diffuse(hit :Hit, _: Ray) -> Ray{
             // println!("diff");
-            let target = hit.point + hit.normal +  Vec3::random_unit_vec();
-            return Ray{origin: hit.point, direction: target - hit.point};
+            let target = hit.normal +  Vec3::random_unit_vec();
+            if target.close_to_zero(){
+                return Ray{origin: hit.point, direction: hit.normal};
+            }
+            return Ray{origin: hit.point, direction: target};
+        }
+        pub fn metal(hit :Hit, r: Ray) -> Ray{
+            Ray{origin: hit.point, direction: r.direction.unit().reflect(hit.normal)}
         }
     }
 
@@ -70,7 +76,7 @@ impl<'a> Debug for Hit<'a> {
         pub origin: Vec3,
         pub radius: f32,
         pub col_mod: Vec3,
-        pub mat: &'a dyn Fn(Hit)->Ray,
+        pub mat: &'a dyn Fn(Hit, Ray)->Ray,
         
     }
     impl Debug for Sphere<'_>{
@@ -116,7 +122,7 @@ impl<'a> Debug for Hit<'a> {
     }
 
     impl Sphere<'_>{
-        pub fn new(origin:Vec3, r: f32, col_mod: Option<Vec3>, mat: Option<&dyn Fn(Hit)->Ray>) ->Sphere{
+        pub fn new(origin:Vec3, r: f32, col_mod: Option<Vec3>, mat: Option<&dyn Fn(Hit, Ray)->Ray>) ->Sphere{
             Sphere {
                 origin: origin,
                 radius: r,
