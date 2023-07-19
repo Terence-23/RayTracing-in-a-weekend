@@ -29,6 +29,9 @@ pub fn diffuse(h: Hit, _: Ray) Ray {
 pub fn metal(h: Hit, r: Ray) Ray {
     return Ray{ .origin = h.point, .direction = vec.reflect(vec.unit_vec(r.direction), h.normal) };
 }
+pub fn metal_fuzzy03(h: Hit, r: Ray) Ray {
+    return Ray{ .origin = h.point, .direction = vec.reflect(vec.unit_vec(r.direction), h.normal) + rand_vec_unit() * Vec3{ 0.3, 0.3, 0.3 } };
+}
 
 fn ray_color(r: Ray, scene: Scene, depth: usize) Vec3 {
     if (depth <= 0) {
@@ -83,10 +86,10 @@ pub fn metalTest() !void {
     const samples = 100;
     var view = Viewport{ .width = w, .height = h, .aspect_ratio = @intToFloat(f32, w) / @intToFloat(f32, h), .samples = samples, .depth = 10 };
     var spheres = try std.ArrayList(Sphere).initCapacity(gpa.allocator(), 4);
-    try spheres.append(Sphere{ .origin = Vec3{ -0.5, 0.0, -1.0 }, .radius = 0.5, .mat = diffuse, .col = Vec3{ 0.6, 0.6, 0.6 } });
+    try spheres.append(Sphere{ .origin = Vec3{ -0.5, 0.0, -1.0 }, .radius = 0.5, .mat = metal_fuzzy03, .col = Vec3{ 0.6, 0.6, 0.6 } });
     try spheres.append(Sphere{ .origin = Vec3{ 0.5, 0.0, -1.0 }, .radius = 0.5, .mat = metal, .col = Vec3{ 0.5, 0.9, 0.9 } });
     try spheres.append(Sphere{ .origin = Vec3{ 0.0, 0.0, -2.0 }, .radius = 1.0, .mat = diffuse, .col = Vec3{ 0.5, 1.0, 0.0 } });
-    try spheres.append(Sphere{ .origin = Vec3{ 0.0, 0.0, 0.0 }, .radius = 1.0 });
+    try spheres.append(Sphere{ .origin = Vec3{ 0.0, -1000.6, 0.0 }, .radius = 1000.0, .mat = diffuse, .col = Vec3{ 1.0, 0.0, 1.0 } });
 
     var scene = Scene{ .spheres = spheres };
     defer scene.deinit();
