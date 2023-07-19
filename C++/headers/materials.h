@@ -13,6 +13,7 @@ namespace materials
     Ray uniform_scatter(Hit hit, Ray r);
     inline Ray empty(Hit hit, Ray r){return Ray(vec3(0,0,0), vec3(0,0,0));}
     Ray metalic(Hit, Ray);
+    Ray metalic_fuzzy03(Hit, Ray);
 }
 
 
