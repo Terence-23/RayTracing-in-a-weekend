@@ -14,12 +14,12 @@ use viewport::viewport::{test_viewport_object, diffuse_test, metal_test};
 
 fn main() {
     println!("Hello, world!");
-    test_write();
-    viewport_test();
-    sphere_test();
-    sphere_test_normal();
-    test_viewport_object();
-    diffuse_test();
+    // test_write();
+    // viewport_test();
+    // sphere_test();
+    // sphere_test_normal();
+    // test_viewport_object();
+    // diffuse_test();
     metal_test();
     println!("Success");
 }

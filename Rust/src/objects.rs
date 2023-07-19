@@ -70,6 +70,9 @@ impl<'a> Debug for Hit<'a> {
         pub fn metal(hit :Hit, r: Ray) -> Ray{
             Ray{origin: hit.point, direction: r.direction.unit().reflect(hit.normal)}
         }
+        pub fn metal_fuzzy03(hit :Hit, r: Ray) -> Ray{
+            Ray{origin: hit.point, direction: (r.direction.unit().reflect(hit.normal) + Vec3::random_unit_vec() * 0.3).unit()}
+        }
     }
 
     pub struct Sphere<'a> {
