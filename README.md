@@ -1,5 +1,5 @@
 # Overview
-My attempt at [RayTracing in one weekend](https://raytracing.github.io) project. I wanted to attempt to write it in multiple languages. For now i have settled for C++, Rust and Zig.
+My attempt at [_Ray Tracing in One Weekend_](https://raytracing.github.io/books/RayTracingInOneWeekend.html) project. I wanted to attempt to write it in multiple languages. For now I have settled for C++, Rust and Zig.
 
 # Build instructions
 ## C++
