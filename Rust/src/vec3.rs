@@ -179,6 +179,7 @@ pub mod ray {
         let t = 0.5 * (-unit_direction.y + 1.0);
         return Rgb([(1.0 - t) + t * 0.5, (1 as f32 - t) + t * 0.7, 1.0]); //(1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0);
     }
+    #[allow(unused_imports)]
     mod tests{
         use super::*;
 

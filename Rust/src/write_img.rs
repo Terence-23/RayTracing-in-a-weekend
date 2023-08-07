@@ -30,6 +30,7 @@ pub mod img_writer{
         
         
     }
+    #[allow(unused_imports)]
     mod tests{
 
         use super::*;
