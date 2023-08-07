@@ -156,9 +156,7 @@ pub struct Vec3 {
 #[allow(dead_code)]
 pub mod ray {
     use crate::vec3::vec3::Vec3;
-    use crate::write_img::img_writer::write_img_f32;
     use image::Rgb;
-    use indicatif::{ProgressBar, ProgressStyle};
 
     #[derive(Debug, Clone, Copy)]
     pub struct Ray {
@@ -181,50 +179,58 @@ pub mod ray {
         let t = 0.5 * (-unit_direction.y + 1.0);
         return Rgb([(1.0 - t) + t * 0.5, (1 as f32 - t) + t * 0.7, 1.0]); //(1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0);
     }
+    mod tests{
+        use super::*;
 
-    pub fn viewport_test() {
-        let aspect_ratio = 3.0 / 2.0;
-        let width = 600_u64;
-        let height = (width as f32 / aspect_ratio) as u64;
+        use indicatif::{ProgressBar, ProgressStyle};
+        use crate::write_img::img_writer::write_img_f32;
+        #[test]
+        pub fn viewport_test() {
+            let aspect_ratio = 3.0 / 2.0;
+            let width = 600_u64;
+            let height = (width as f32 / aspect_ratio) as u64;
 
-        let viewport_height = 2.0;
-        let viewport_width = aspect_ratio * viewport_height;
-        let focal_length: f32 = 1.0;
+            let viewport_height = 2.0;
+            let viewport_width = aspect_ratio * viewport_height;
+            let focal_length: f32 = 1.0;
 
-        let origin = Vec3::new(0.0, 0.0, 0.0);
-        let horizontal = Vec3::new(viewport_width, 0.0, 0.0);
-        let vertical = Vec3::new(0.0, viewport_height, 0.0);
-        let lower_left_corner =
-            origin - horizontal / 2_f32 - vertical / 2_f32 - Vec3::new(0.0, 0.0, focal_length);
+            let origin = Vec3::new(0.0, 0.0, 0.0);
+            let horizontal = Vec3::new(viewport_width, 0.0, 0.0);
+            let vertical = Vec3::new(0.0, viewport_height, 0.0);
+            let lower_left_corner =
+                origin - horizontal / 2_f32 - vertical / 2_f32 - Vec3::new(0.0, 0.0, focal_length);
 
-        let mut img: Vec<Vec<Rgb<f32>>> = Vec::new();
+            let mut img: Vec<Vec<Rgb<f32>>> = Vec::new();
 
-        let pb = ProgressBar::new(height);
-        pb.set_style(
-            ProgressStyle::default_bar()
-                .template(
-                    "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
-                )
-                .unwrap()
-                .progress_chars("#C-"),
-        );
+            let pb = ProgressBar::new(height);
+            pb.set_style(
+                ProgressStyle::default_bar()
+                    .template(
+                        "{msg} {spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
+                    )
+                    .unwrap()
+                    .progress_chars("#C-"),
+            );
+            pb.set_message("Viewport test");
 
-        for j in 0..height {
-            pb.inc(1);
-            let mut row = Vec::new();
-            for i in 0..width {
-                let r = Ray::new(
-                    origin,
-                    lower_left_corner
-                        + horizontal * (i as f32 / (width - 1) as f32)
-                        + vertical * (j as f32 / (height - 1) as f32),
-                );
-                row.push(ray_color(r));
+            for j in 0..height {
+                pb.inc(1);
+                let mut row = Vec::new();
+                for i in 0..width {
+                    let r = Ray::new(
+                        origin,
+                        lower_left_corner
+                            + horizontal * (i as f32 / (width - 1) as f32)
+                            + vertical * (j as f32 / (height - 1) as f32),
+                    );
+                    row.push(ray_color(r));
+                }
+                img.push(row);
             }
-            img.push(row);
-        }
-        pb.finish_with_message("Writing to disk");
+            pb.finish_with_message("Writing to disk");
 
-        write_img_f32(img, "viewport_test.png".to_string());
+            write_img_f32(img, "viewport_test.png".to_string());
+        }
     }
+
 }

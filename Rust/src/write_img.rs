@@ -30,26 +30,30 @@ pub mod img_writer{
         
         
     }
+    mod tests{
 
-    pub fn test_write(){
+        use super::*;
+        #[test]
+        pub fn test_write(){
 
-        let width = 256;
-        let height = 256;
+            let width = 256;
+            let height = 256;
 
-        let mut arr = vec![vec![Rgb([0 as u8,0 as u8,0 as u8]); width]; height];
+            let mut arr = vec![vec![Rgb([0 as u8,0 as u8,0 as u8]); width]; height];
 
-        for i in 0..width{
-            for j in 0..height{
-                let rgb = Rgb([(i as f32) / (width - 1) as f32 , (j as f32) / (height - 1) as f32, 0.25]);
-                arr[j][i]  = Rgb([
-                    (rgb.0[0] * 255.0).round() as u8,
-                    (rgb.0[1] * 255.0).round() as u8,
-                    (rgb.0[2] * 255.0).round() as u8]);
-            }
-       }
+            for i in 0..width{
+                for j in 0..height{
+                    let rgb = Rgb([(i as f32) / (width - 1) as f32 , (j as f32) / (height - 1) as f32, 0.25]);
+                    arr[j][i]  = Rgb([
+                        (rgb.0[0] * 255.0).round() as u8,
+                        (rgb.0[1] * 255.0).round() as u8,
+                        (rgb.0[2] * 255.0).round() as u8]);
+                }
+        }
 
-        write_img(arr, "test.png".to_string())
+            write_img(arr, "test.png".to_string())
 
+        }
     }
 
 }
