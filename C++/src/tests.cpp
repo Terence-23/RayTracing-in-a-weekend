@@ -183,9 +183,9 @@ void diffuse_test()
     uint samples = 100;
     Scene scene;
     std::vector<Sphere> spheres = {
-        Sphere(vec3(-0.5, 0, -1), 0.5, materials::uniform_scatter, vec3(0.6, 0.6, 0.6)), 
-        Sphere(vec3(0.5, 0, -1), 0.5, materials::uniform_scatter, vec3(1, 0.2, 0.2)), 
-        Sphere(vec3(0, 0, -2), 1, materials::uniform_scatter, vec3(0.2, 0.2, 0.2))};
+        Sphere(vec3(-0.5, 0, -1), 0.5, materials::scatterM, vec3(0.6, 0.6, 0.6)), 
+        Sphere(vec3(0.5, 0, -1), 0.5, materials::scatterM, vec3(1, 0.2, 0.2)), 
+        Sphere(vec3(0, 0, -2), 1, materials::scatterM, vec3(0.2, 0.2, 0.2))};
     scene.spheres = spheres;
     // Viewport viewport(width, height, samples, 10);
     Viewport viewport(width, aspect_ratio, samples, 10);
@@ -200,10 +200,10 @@ void metal_test()
     uint samples = 100;
     Scene scene;
     std::vector<Sphere> spheres = {
-        Sphere(vec3(-0.52, 0, -1), 0.5, materials::uniform_scatter, vec3(0.6, 0.6, 0.6)), 
-        Sphere(vec3(0.52, 0, -1), 0.5, materials::uniform_scatter, vec3(1, 0.2, 0.2)), 
-        Sphere(vec3(0, 0, -3), 1, materials::metalic, vec3(1, 1, 1)),
-        Sphere(vec3(0, -1000.6, -40), 1000, materials::metalic_fuzzy03, vec3(1, 0, 1))};
+        Sphere(vec3(-0.52, 0, -1), 0.5, materials::scatterM, vec3(0.6, 0.6, 0.6)), 
+        Sphere(vec3(0.52, 0, -1), 0.5, materials::scatterM, vec3(1, 0.2, 0.2)), 
+        Sphere(vec3(0, 0, -3), 1, materials::metallicM, vec3(1, 1, 1)),
+        Sphere(vec3(0, -1000.6, -40), 1000, materials::fuzzy3, vec3(1, 0, 1))};
     scene.spheres = spheres;
     // Viewport viewport(width, height, samples, 10);
     Viewport viewport(width, aspect_ratio, samples, 10);

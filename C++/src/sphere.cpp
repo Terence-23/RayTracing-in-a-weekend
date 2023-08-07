@@ -26,7 +26,7 @@ const Hit Sphere::collisionNormal(const Ray& ray, float mint, float maxt) const
     if (x < mint || x > maxt) return NO_HIT;
 
     Hit hit = Hit(x, (ray.at(x) - origin).unit_vector(), ray.at(x));
-    Ray next = this->material(hit, ray);
+    Ray next = this->material.onHit(hit, ray);
     if (next.direction.near_zero()){
         next = hit.normal;
     }
