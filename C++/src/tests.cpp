@@ -210,6 +210,25 @@ void metal_test()
     auto img = viewport.Render(ray_colorD, scene);
     write_ppm("metal_test.ppm", img);
 }
+void glass_test()
+{
+    // uint height = 600;
+    f32 aspect_ratio = 3.0 / 2;
+    int width = 300;
+    uint samples = 100;
+    Scene scene;
+    std::vector<Sphere> spheres = {
+        Sphere(vec3(0/*-0.52*/, 0, -1), 0.5, materials::glass, vec3(1, 1, 1)),
+        Sphere(vec3(0/*-0.52*/, 0, -1), 0.35, materials::glassR, vec3(1, 1, 1)), 
+        // Sphere(vec3(0.52, 0, -1), 0.5, materials::scatterM, vec3(1, 0.2, 0.2)), 
+        // Sphere(vec3(0, 0, -3), 1, materials::metallicM, vec3(1, 1, 1)),
+        Sphere(vec3(0, -100.5, -1), 100, materials::scatterM, vec3(1, 0, 1))};
+    scene.spheres = spheres;
+    // Viewport viewport(width, height, samples, 10);
+    Viewport viewport(width, aspect_ratio, samples, 10);
+    auto img = viewport.Render(ray_colorD, scene);
+    write_ppm("glass_test.ppm", img);
+}
 
 class Test{
     public:
@@ -225,16 +244,15 @@ class Test{
 
 void run_tests()
 {
-
     std::vector<Test> tests = {
-        Test("Write test", write_test), 
-        Test("Viewport test", viewport_test), 
-        Test("Sphere test", sphere_test), 
-        Test("Sphere normal test", sphere_normal_test), 
-        Test("Scene test", scene_test), 
-        Test("Diffuse material test", diffuse_test),
-        Test("Metal material test", metal_test)
+        // Test("Write test", write_test), 
+        // Test("Viewport test", viewport_test), 
+        // Test("Sphere test", sphere_test), 
+        // Test("Sphere normal test", sphere_normal_test), 
+        // Test("Scene test", scene_test), 
+        // Test("Diffuse material test", diffuse_test),
+        // Test("Metal material test", metal_test),
+        Test("Dielectric material test", glass_test)
     };
     for (auto t: tests) t.run();
-    // funcs[6]();
 }

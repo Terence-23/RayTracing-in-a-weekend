@@ -21,11 +21,10 @@ const Hit Sphere::collisionNormal(const Ray& ray, float mint, float maxt) const
     auto x1 = (-b - sqrt(discriminant)) / (a);
     auto x2 = (-b + sqrt(discriminant)) / (a);
 
-    auto x = std::min(x1, x2);
+    if (x1 < mint) x1 = x2; 
+    if (x1 < mint || x1 > maxt) return NO_HIT;
 
-    if (x < mint || x > maxt) return NO_HIT;
-
-    Hit hit = Hit(x, (ray.at(x) - origin).unit_vector(), ray.at(x));
+    Hit hit = Hit(x1, (ray.at(x1) - origin).unit_vector(), ray.at(x1));
     Ray next = this->material.onHit(hit, ray);
     if (next.direction.near_zero()){
         next = hit.normal;
