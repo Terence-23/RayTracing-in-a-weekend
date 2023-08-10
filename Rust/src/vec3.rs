@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 pub mod vec3 {
-    use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+    use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign, Neg};
     use rand::random;
 
     use image::Rgb;
@@ -9,6 +9,12 @@ pub struct Vec3 {
         pub x: f32,
         pub y: f32,
         pub z: f32,
+    }
+    impl Neg for Vec3{
+        type Output = Self;
+        fn neg(self) -> Self{
+            Vec3 { x: -self.x, y: -self.y, z: -self.z }
+        } 
     }
     impl MulAssign<f32> for Vec3 {
         fn mul_assign(&mut self, rhs: f32) {
@@ -110,7 +116,9 @@ pub struct Vec3 {
         pub fn to_rgb(&self) ->Rgb<f32>{
             Rgb([self.x, self.y, self.z])
         }
-
+        pub fn length2(&self) -> f32 {
+            self.x * self.x + self.y * self.y + self.z * self.z
+        }
         pub fn length(&self) -> f32 {
             (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
         }

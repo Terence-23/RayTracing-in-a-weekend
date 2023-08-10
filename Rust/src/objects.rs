@@ -42,7 +42,7 @@ impl Debug for Hit {
         normal: Vec3{x:0.0, y:0.0, z:0.0}, 
         point: Vec3{x:0.0, y:0.0, z:0.0}, 
         col_mod:Vec3 { x: 1.0, y: 1.0, z: 1.0 }, 
-        mat: Material{metallicness: 0.0, opacity: 0.0}
+        mat: Material{metallicness: 0.0, opacity: 0.0, ir: 1.0}
     };
 
     pub trait Object {
@@ -50,27 +50,70 @@ impl Debug for Hit {
 
         fn collision_normal(&self, r: Ray, mint:f32, maxt:f32) -> Hit;
     }
-    #[allow(dead_code)]
+    #[allow(dead_code, unused_imports)]
     pub mod materials{
         use super::Hit;
         use crate::vec3::{ray::Ray, vec3::Vec3};
         use rand::random;
         #[derive(Debug, Clone, Copy)]
         pub struct Material{
-            pub metallicness:f32, 
-            pub opacity:f32
+            pub metallicness: f32, 
+            pub opacity: f32,
+            pub ir: f32
         }
         impl Material{
-            pub fn new(metallicness: f32, opacity:f32) -> Self{
-                Self { metallicness: metallicness, opacity: opacity }
+            pub fn new(metallicness: f32, opacity: f32, ir: f32) -> Self{
+                Self { metallicness: metallicness, opacity: opacity, ir:ir }
             }
             pub fn new_m(metallicness: f32) -> Self{
-                Self { metallicness: metallicness, opacity: 0.0 }
+                Self { metallicness: metallicness, opacity: 0.0, ir: 1.0 }
             }
+            fn refract(uv: Vec3, n: Vec3, etai_over_etat: f32) -> Vec3 {
+                let mut cos_theta = (-uv).dot(n);
+                if cos_theta > 1.0 {cos_theta = 1.0}
+                let r_out_perp =   (uv + n * cos_theta) * etai_over_etat;
+                let r_out_parallel = n * -(1.0 - r_out_perp.length2()).abs().sqrt();
+                return r_out_perp + r_out_parallel;
+            }
+            fn reflectance(cosine: f32, ref_idx: f32) -> f32{
+                // Use Schlick's approximation for reflectance.
+                let mut r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
+                r0 = r0*r0;
+                return r0 + (1.0 - r0) * (1.0 - cosine).powi(5);
+            }
+        
             pub fn on_hit(&self, h :Hit, r: Ray) -> Ray{
-                if random::<f32>() < self.opacity{
-                    return refract(h, r);
+                if self.opacity > 0.0{     
+                    let n;               
+                    let front_face = if r.direction.dot(h.normal) > 0.0 {
+                        n = -h.normal;
+                        false
+                    } else {
+                        n = h.normal;
+                        true
+                    };
+                    let refraction_ratio =  if front_face {1.0 / self.ir}else{self.ir};
+
+                    let unit_direction = r.direction.unit();
+                    let mut cos_theta = (-unit_direction).dot(n);
+                    if cos_theta > 1.0 {cos_theta = 1.0;}
+                    let sin_theta = (1.0 - cos_theta*cos_theta).sqrt();
+
+                    let cannot_refract = refraction_ratio * sin_theta > 1.0;
+                    let reflectance = Self::reflectance(cos_theta, refraction_ratio);
+                    eprintln!("ff: {} can refract: {} ref_ratio: {}", front_face, !cannot_refract, refraction_ratio);
+                    let direction = if cannot_refract || reflectance > random::<f32>(){
+                        eprintln!("reflect");
+                        unit_direction.reflect(n)
+                    }else{
+                        eprintln!("ud: {:?} hn: {:?}", unit_direction, n);
+                        Self::refract(unit_direction, n, refraction_ratio)
+                    };
+
+                    return Ray::new(h.point, direction);
+
                 }
+                eprintln!("reflect");
                 let sc = diffuse(h, r).direction * (1.0 - self.metallicness);
                 let mut reflect = metallic(h,r);
                 reflect.direction = reflect.direction * self.metallicness + sc;
@@ -78,14 +121,16 @@ impl Debug for Hit {
             }
         }
 
-        pub const METALLIC_M: Material = Material{metallicness: 1.0, opacity: 0.0};
-        pub const SCATTER_M: Material = Material{metallicness: 0.0, opacity: 0.0};
-        pub const FUZZY3_M: Material = Material{metallicness: 0.7, opacity: 0.0};
+        pub const METALLIC_M: Material = Material{metallicness: 1.0, opacity: 0.0, ir: 1.0};
+        pub const SCATTER_M: Material = Material{metallicness: 0.0, opacity: 0.0, ir: 1.0};
+        pub const FUZZY3_M: Material = Material{metallicness: 0.7, opacity: 0.0, ir: 1.0};
+        pub const GLASS_M: Material = Material{metallicness: 1.0, opacity: 1.0, ir:1.50};
+        pub const GLASSR_M: Material = Material{metallicness: 1.0, opacity: 1.0, ir: 1.0/GLASS_M.ir};
         pub const EMPTY_M: Material = SCATTER_M;
-        pub fn empty(_hit: Hit, _:Ray) -> Ray{
+        fn empty(_hit: Hit, _:Ray) -> Ray{
             Ray{origin:Vec3 { x: 0.0, y: 0.0, z: 0.0 }, direction:Vec3 { x: 0.0, y: 0.0, z: 0.0 }}
         }
-        pub fn diffuse(hit :Hit, _: Ray) -> Ray{
+        fn diffuse(hit :Hit, _: Ray) -> Ray{
             // println!("diff");
             let target = hit.normal +  Vec3::random_unit_vec();
             if target.close_to_zero(){
@@ -93,15 +138,13 @@ impl Debug for Hit {
             }
             return Ray{origin: hit.point, direction: target};
         }
-        pub fn metallic(hit :Hit, r: Ray) -> Ray{
+        fn metallic(hit :Hit, r: Ray) -> Ray{
             Ray{origin: hit.point, direction: r.direction.unit().reflect(hit.normal)}
         }
-        pub fn metal_fuzzy03(hit :Hit, r: Ray) -> Ray{
+        fn metal_fuzzy03(hit :Hit, r: Ray) -> Ray{
             Ray{origin: hit.point, direction: (r.direction.unit().reflect(hit.normal) + Vec3::random_unit_vec() * 0.3).unit()}
         }
-        pub fn refract(_hit :Hit, _: Ray) -> Ray{
-            Ray{origin:Vec3 { x: 0.0, y: 0.0, z: 0.0 }, direction:Vec3 { x: 0.0, y: 0.0, z: 0.0 }}
-        }
+        
     }
 
     #[derive(Debug)]
@@ -141,15 +184,14 @@ impl Debug for Hit {
                 return NO_HIT;
             }
 
-            let x = (if a < 0.0 {
-                -b + d.sqrt()
-            } else {
-                -b - d.sqrt()
-            }) / a;
+            let mut x = (-b - d.sqrt()) / a;
+            if x < mint {x = (-b + d.sqrt()) / a}
 
             if x < mint || x > maxt {
                 return NO_HIT;
             }
+            // println!("mint: {}", mint);
+            assert_ne!(x, 0.0);
             return Hit{t:x, normal:(r.at(x) - self.origin).unit(), point: r.at(x), mat: self.mat, col_mod:self.col_mod};
         }
     }
@@ -165,7 +207,7 @@ impl Debug for Hit {
                 },
                 mat: match mat{
                     Some(n) => n,
-                    None => Material{metallicness: 0.0, opacity: 0.0} 
+                    None => Material{metallicness: 0.0, opacity: 0.0, ir: 1.0} 
                 },
             }
         }
@@ -189,7 +231,7 @@ impl Debug for Hit {
                 },
                 radius: -0.5,
                 col_mod: Vec3::new(0.0,0.0,0.0),
-                mat: Material{metallicness: 0.0, opacity: 0.0},
+                mat: Material{metallicness: 0.0, opacity: 0.0, ir: 1.0},
             };
             if sphere.collide(r) {
                 return Rgb([1.0, 0.0, 0.0]);
