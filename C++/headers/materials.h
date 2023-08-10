@@ -56,20 +56,25 @@ namespace materials
 
                 bool cannot_refract = refraction_ratio * sin_theta > 1.0;
                 vec3 direction;
-
-                if (cannot_refract || reflectance(cos_theta, refraction_ratio) > random_double())
+                std::cerr << "ff: " << front_face <<" can refract: " << !cannot_refract << " ref_ratio: " << refraction_ratio << '\n';
+                if (cannot_refract){// || reflectance(cos_theta, refraction_ratio) * opacity > random_double())
                     direction = unit_direction.reflect(h.normal);
-                else
-                    direction = refract(unit_direction, h.normal, refraction_ratio);
+                    std::cerr << "reflect" << '\n';
+                }else{
 
-                std::cerr << refraction_ratio << '\n';
+                    std::cerr << "ud "<< unit_direction << " hn " << h.normal << '\n';
+                    direction = refract(unit_direction, h.normal, refraction_ratio);
+                }
+                
                 return Ray(h.point, direction);
             }
+            std::cerr << "reflect" << '\n';
             vec3 sc = materials::uniform_scatter(h, r).direction * (1.0 - this->metallicness);
             Ray reflect = materials::metallic(h,r);
             reflect.direction = reflect.direction * this->metallicness + sc;
             return reflect;
         }
+
 
     };
 

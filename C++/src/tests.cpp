@@ -230,6 +230,69 @@ void glass_test()
     write_ppm("glass_test.ppm", img);
 }
 
+RGB_float ray_color_small(const Ray &r, const Scene& scene, uint depth, uint max_depth) {
+    std::cerr << "D: " << max_depth - depth << '\n';
+    if (depth >= max_depth) {
+        // auto t = 0.5 * (r.direction.unit_vector().y + 1.0);
+        // return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
+        return RGB_float(0,0,0);
+    }
+    float mint = 0.001, maxt = 1000.0;
+    
+    Hit min_hit = NO_HIT;
+    bool is_rand = false;
+    for(auto s: scene.spheres){
+        Hit hit = s.collisionNormal(r, mint, maxt);
+        if(hit.isHit() && (!min_hit.isHit() || hit.t < min_hit.t)){
+            min_hit = hit;
+            if (s.material.metallicness != 1.0){
+                is_rand = true;
+            }else{
+                is_rand = false;
+            }
+        }
+    }
+    Hit hit = min_hit;
+
+    if (is_rand) {
+            return color(1.0, 1.0, 0.0);
+        }
+
+    if (hit.isHit()) {
+        std::cerr << "Hit\n";
+        std::cerr << min_hit.next << '\n';
+        RGB_float col = ray_color_small(min_hit.next, scene, depth+1, max_depth) * min_hit.col_mod;
+
+        return col;
+    }
+    std::cerr << "Sky\n";
+    auto t = 0.5 * (r.direction.unit_vector().y + 1.0);
+    return color(0.0, 0.0, 1.0);
+    // return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
+}
+
+
+void s_test(){
+    const int WIDTH(10), HEIGHT(10);
+    Scene scene;
+    std::vector<Sphere> spheres = {
+        Sphere(vec3(0/*-0.52*/, 0, -1), 0.5, materials::metallicM, vec3(1, 1, 1)), 
+        // Sphere(vec3(0.52, 0, -1), 0.5, materials::scatterM, vec3(1, 0.2, 0.2)), 
+        // Sphere(vec3(0, 0, -3), 1, materials::metallicM, vec3(1, 1, 1)),
+        // Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(METALLIC_M)),
+        // Sphere::new(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(EMPTY_M)),
+        Sphere(vec3(0, -100.5, -1), 100, materials::scatterM, vec3(0.8, 0.5, 1.0))
+        };
+    scene.spheres = spheres;
+    // Viewport viewport(width, height, samples, 10);
+    Viewport viewport(WIDTH, HEIGHT);
+    auto img = viewport.Render_no_rand(ray_color_small, scene);
+    write_ppm("test_c.ppm", img);
+    scene.spheres[0].material = materials::glass;
+    img = viewport.Render_no_rand(ray_color_small, scene);
+    write_ppm("test.ppm", img);
+}
+
 class Test{
     public:
     const char* message;
@@ -252,7 +315,8 @@ void run_tests()
         // Test("Scene test", scene_test), 
         // Test("Diffuse material test", diffuse_test),
         // Test("Metal material test", metal_test),
-        Test("Dielectric material test", glass_test)
+        // Test("Dielectric material test", glass_test),
+        Test("Dielectric material small test", s_test)
     };
     for (auto t: tests) t.run();
 }

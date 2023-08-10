@@ -20,11 +20,16 @@ public:
     uint max_reflections;
     float gamma = 2;
 
-    inline Viewport(uint width, uint height, uint samples) : width(width),
-                                                             height(height),
-                                                             aspect_ratio(width / float(height)),
-                                                             samples_per_pixel(samples),
-                                                             max_reflections(10) {}
+    inline Viewport(uint width, uint height, uint samples): width(width),
+                                                            height(height),
+                                                            aspect_ratio(width / float(height)),
+                                                            samples_per_pixel(samples),
+                                                            max_reflections(10) {}
+    inline Viewport(uint width, uint height):   width(width),
+                                                height(height),
+                                                aspect_ratio(width / float(height)),
+                                                samples_per_pixel(1),
+                                                max_reflections(10) {}
 
     inline Viewport(uint width, uint height, uint samples, uint max_reflections) : width(width),
                                                              height(height),
@@ -44,4 +49,5 @@ public:
                                                                     max_reflections(max_reflections) {}
 
     Img Render(RGB_float (*ray_color)(const Ray &r, const Scene &scene, uint, uint), const Scene &scene);
+    Img Render_no_rand(RGB_float (*ray_color)(const Ray &r, const Scene &scene, uint, uint), const Scene &scene);
 };
