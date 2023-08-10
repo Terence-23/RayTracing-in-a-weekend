@@ -101,12 +101,12 @@ impl Debug for Hit {
 
                     let cannot_refract = refraction_ratio * sin_theta > 1.0;
                     let reflectance = Self::reflectance(cos_theta, refraction_ratio);
-                    eprintln!("ff: {} can refract: {} ref_ratio: {}", front_face, !cannot_refract, refraction_ratio);
+                    // eprintln!("ff: {} can refract: {} ref_ratio: {}", front_face, !cannot_refract, refraction_ratio);
                     let direction = if cannot_refract || reflectance > random::<f32>(){
-                        eprintln!("reflect");
+                        // eprintln!("reflect");
                         unit_direction.reflect(n)
                     }else{
-                        eprintln!("ud: {:?} hn: {:?}", unit_direction, n);
+                        // eprintln!("ud: {:?} hn: {:?}", unit_direction, n);
                         Self::refract(unit_direction, n, refraction_ratio)
                     };
 
