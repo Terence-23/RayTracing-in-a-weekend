@@ -30,7 +30,9 @@ pub fn cross_product(v: Vec3, u: Vec3) Vec3 {
         v.x * u.y - v.y * u.x,
     };
 }
-
+pub fn vec_len2(v: Vec3) f32 {
+    return v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+}
 pub fn vec_len(v: Vec3) f32 {
     return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 }

@@ -309,6 +309,7 @@ pub mod viewport{
         }
     }
     #[cfg(test)]
+    #[allow(unused_imports)]
     mod glass_tests{
         use super::*;
         use crate::write_img::img_writer::write_img_f32;

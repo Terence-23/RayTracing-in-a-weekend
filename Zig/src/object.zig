@@ -68,11 +68,9 @@ pub const Sphere = struct {
         if (d < 0.0) {
             return NO_HIT;
         }
-        var x: f32 = -1;
-        if (a < 0.0) {
+        var x: f32 = (-b - sqrt(d)) / a;
+        if (x < mint) {
             x = (-b + sqrt(d)) / a;
-        } else {
-            x = (-b - sqrt(d)) / a;
         }
 
         if (x < mint or x > maxt) {

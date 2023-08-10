@@ -51,19 +51,21 @@ pub fn main() !void {
     // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
     std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
 
-    try write_test();
+    // try write_test();
 
-    try ray.viewport_test();
+    // try ray.viewport_test();
 
-    try object.sphere_test();
+    // try object.sphere_test();
 
-    try object.sphere_test_normal();
+    // try object.sphere_test_normal();
 
-    try viewport.sceneTest();
+    // try viewport.sceneTest();
 
-    try materials.diffuseTest();
+    // try materials.diffuseTest();
 
-    try materials.metalTest();
+    // try materials.metalTest();
+
+    try materials.glassTest();
 
     std.debug.print("Run `zig build test` to run the tests.\n", .{});
 }
