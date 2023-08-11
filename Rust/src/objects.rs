@@ -113,7 +113,7 @@ impl Debug for Hit {
                     return Ray::new(h.point, direction);
 
                 }
-                eprintln!("reflect");
+                // eprintln!("reflect");
                 let sc = diffuse(h, r).direction * (1.0 - self.metallicness);
                 let mut reflect = metallic(h,r);
                 reflect.direction = reflect.direction * self.metallicness + sc;

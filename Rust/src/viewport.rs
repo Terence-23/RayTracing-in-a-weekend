@@ -4,7 +4,6 @@ pub mod viewport{
     use crate::vec3::{ray::Ray, vec3::Vec3};
     use image::Rgb;
     use indicatif::{ProgressBar, ProgressStyle};
-    use rand;
     use rand::Rng;
     use crate::objects::objects::{NO_HIT, Sphere, Object}; 
 
@@ -18,9 +17,15 @@ pub mod viewport{
         pub height :u64,
 
         origin :Vec3,
-        horizontal :Vec3,
-        vertical:Vec3,
-        lower_left_corner: Vec3,
+        upper_left_corner: Vec3,
+        
+        w: Vec3,
+        u: Vec3,
+        v: Vec3,
+
+        p_delta_u: Vec3,
+        p_delta_v: Vec3,
+
         pub depth: usize,
         pub gamma:f32,
         pub msg: String
@@ -33,29 +38,69 @@ pub mod viewport{
         Vec3 { x: col.x.powf(gamma), y: col.y.powf(gamma), z: col.z.powf(gamma) }
     }
     impl Viewport{
-        pub fn new(width:u64, aspect_ratio:f32, samples: usize, depth:usize, gamma:f32, msg: Option<String>)-> Self{
+        pub fn new(width:u64, aspect_ratio:f32, samples: usize, depth:usize, gamma:f32, vfov:Option<f32>, origin: Option<Vec3>, direction: Option<Vec3>, vup: Option<Vec3>, msg: Option<String>)-> Self{
             
-            let viewport_height = 2.0;
-            let viewport_width = aspect_ratio * viewport_height;
-            let focal_length: f32 = 1.0;
+            
 
-            let origin = Vec3::new(0.0, 0.0, 0.0);
-            let horizontal = Vec3::new(viewport_width, 0.0, 0.0);
-            let vertical = Vec3::new(0.0, viewport_height, 0.0);
-            let lower_left_corner =
-                origin - horizontal / 2_f32 - vertical / 2_f32 - Vec3::new(0.0, 0.0, focal_length);
+            let c_origin = match origin{
+                Some(v) => v,
+                None => Vec3::new(0.0, 0.0, 0.0)
+            };
+            let c_dir = match direction{
+                Some(v) => v,
+                None => Vec3::new(0.0, 0.0, -1.0)
+            };
+            let c_vup = match vup{
+                Some(v) => v,
+                None => Vec3 { x: 0.0, y: 1.0, z: 0.0 }
+            };
+            let c_vfov = match vfov{
+                Some(x) => x,
+                None => 90.0
+            };
+
+            let w = -c_dir;
+            let u = c_vup.cross(w).unit();
+            let v = w.cross(u);
+
+            let height = (width as f32 / aspect_ratio) as u64;
+
+            let h = (c_vfov * std::f32::consts::PI / 360.0).tan();
+
+            let viewport_height = 2.0 * h;
+            let viewport_width = aspect_ratio * viewport_height;
+
+            let viewport_u = u * viewport_width;
+            let viewport_v = -v * viewport_height;
+
+            let pixel_delta_u = viewport_u / width as f32;
+            let pixel_delta_v = viewport_v / height as f32;
+
+            let viewport_upper_left = c_origin - w - viewport_u / 2.0 - viewport_v / 2.0; 
+            let pixel00_loc = viewport_upper_left + (pixel_delta_u + pixel_delta_v) * 0.5;
+            
+            // let horizontal = Vec3::new(viewport_width, 0.0, 0.0);
+            // let vertical = Vec3::new(0.0, viewport_height, 0.0);
+            // let lower_left_corner =
+            //     c_origin - horizontal / 2_f32 - vertical / 2_f32 - Vec3::new(0.0, 0.0, focal_length);
             
             Self{
                 samples: samples,
                 aspect_ratio: aspect_ratio,
                 width: width,
-                height: (width as f32 / aspect_ratio) as u64,
+                height: height,
 
-                origin:origin,
-                horizontal:horizontal,
-                vertical: vertical,
+                origin:c_origin,
+                
+                w: w,
+                v: v,
+                u: u,
 
-                lower_left_corner:lower_left_corner,
+                p_delta_u:pixel_delta_u,
+                p_delta_v:pixel_delta_v,
+
+                upper_left_corner:pixel00_loc,
+
                 depth:depth,
                 gamma: gamma,
                 msg: match msg{
@@ -64,8 +109,8 @@ pub mod viewport{
                 }
             }
         }
-        pub fn new_from_res(width:u64, height:u64, samples:usize, depth:usize, gamma: f32, msg: Option<String>) -> Self{
-            Self::new(width, width as f32 / height as f32, samples, depth, gamma, msg)
+        pub fn new_from_res(width:u64, height:u64, samples:usize, depth:usize, gamma: f32, vfov:Option<f32>, origin: Option<Vec3>, direction: Option<Vec3>, vup: Option<Vec3>, msg: Option<String>) -> Self{
+            Self::new(width, width as f32 / height as f32, samples, depth, gamma, vfov, origin, direction, vup, msg)
         }
 
         pub fn render(&self, ray_color: &dyn Fn(Ray, &Scene, usize)->Rgb<f32>, scene: Scene) -> Img{
@@ -92,9 +137,8 @@ pub mod viewport{
                     for _ in 0..self.samples{
                         let r = Ray::new(
                             self.origin,
-                            self.lower_left_corner
-                                + self.horizontal * ((i as f32 + rng.gen::<f32>()) / (self.width - 1) as f32)
-                                + self.vertical * (((self.height - 1 - j) as f32 + rng.gen::<f32>()) / (self.height - 1) as f32),
+                            self.upper_left_corner +
+                               self.p_delta_u * (i as f32 + rng.gen::<f32>()) + self.p_delta_v * (j as f32 + rng.gen::<f32>()),
                         );
                         color += Vec3::from_rgb(ray_color(r, &scene, self.depth));
                     }
@@ -126,14 +170,12 @@ pub mod viewport{
 
                 for i in 0..self.width {
                     
-                    let u = (i as f32) / (self.width - 1)as f32;
-                    let v = ((self.height - 1 - j) as f32) / (self.height - 1) as f32;
-                    eprintln!("x: {}, y: {}\nu: {}, v: {}", i, j, u, v);
+                    // eprintln!("x: {}, y: {}\nu: {}, v: {}", i, j, u, v);
                     let r = Ray::new(
                         self.origin,
-                        self.lower_left_corner
-                            + self.horizontal * u
-                            + self.vertical * v
+                        self.upper_left_corner
+                            + self.p_delta_u * i as f32
+                            + self.p_delta_v * j as f32
                     );
                     let col = gamma_correct(Vec3::from_rgb(ray_color(r, &scene, self.depth)), inv_g);
 
@@ -146,7 +188,7 @@ pub mod viewport{
         }
     }
     fn ray_color_d(r: Ray, scene: &Scene, depth:usize) -> Rgb<f32> {
-        eprintln!("D: {}", depth);
+        // eprintln!("D: {}", depth);
         if depth < 1{
             
             return Rgb([0.0, 0.0, 0.0])
@@ -166,7 +208,7 @@ pub mod viewport{
         };
 
         if hit != NO_HIT {
-            eprintln!("Hit: {:?}", hit );
+            // eprintln!("Hit: {:?}", hit );
             let cm = hit.col_mod;
             let front = if r.direction.dot(hit.normal) > 0.0 {
                 false
@@ -180,7 +222,7 @@ pub mod viewport{
             // println!("depth: {}", depth);
             return (Vec3::from_rgb(ray_color_d(next, scene, depth-1)) * cm).to_rgb();
         }
-        eprintln!("Sky");
+        // eprintln!("Sky");
         let unit_direction = r.direction.unit();
         let t = 0.5 * (unit_direction.y + 1.0);
         return Rgb([(1.0 - t) + t * 0.5, (1 as f32 - t) + t * 0.7, 1.0]); //(1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0);
@@ -190,8 +232,7 @@ pub mod viewport{
     mod tests{
         use super::*;
         use crate::write_img::img_writer::write_img_f32;
-        use crate::objects::objects::materials::{EMPTY_M, SCATTER_M, METALLIC_M, FUZZY3_M, GLASS_M, GLASSR_M};
-    
+
         fn ray_color(r: Ray, scene: &Scene, _:usize) -> Rgb<f32> {
             
             let mint = 0.0; let maxt = 1000.0;
@@ -231,13 +272,20 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: 0.0, y: 0.0, z: 0.0,},1.0, None, None),
             };
             let scene = Scene{spheres: spheres};
-            let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0, Some("Viewport object test".to_string()));
+            let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0, None, None, None, None, Some("Viewport object test".to_string()));
 
             let img = viewport.render(&ray_color, scene);
 
             write_img_f32(img, "viewport_object.png".to_string());
 
         }
+    
+    }
+    #[cfg(test)]
+    mod material_tests{
+        use super::*;
+        use crate::write_img::img_writer::write_img_f32;
+        use crate::objects::objects::materials::{EMPTY_M, SCATTER_M, METALLIC_M, FUZZY3_M, GLASS_M, GLASSR_M};
         #[test]
         pub fn diffuse_test(){
             let samples = 100;
@@ -245,14 +293,13 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.6, 0.6, 0.6)), Some(SCATTER_M)),
                 Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M)),
                 Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(SCATTER_M)),
-                Sphere::new(Vec3 {x: 0.0, y: 0.0, z: 0.0,}, 1.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(EMPTY_M)),
             };
             let scene = Scene{spheres: spheres};
-            let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0, Some("Diffuse test".to_string()));
+            let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0, None, None, None, None, Some("Diffuse test".to_string()));
 
             let img = viewport.render(&ray_color_d, scene);
 
-            write_img_f32(img, "scatterM_test.png".to_string());
+            write_img_f32(img, "diffuse_test.png".to_string());
 
         }
         #[test]
@@ -265,7 +312,7 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: 0.0, y: -1000.9, z: -5.0,}, 1000.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(EMPTY_M)),
             };
             let scene = Scene{spheres: spheres};
-            let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0, Some("Metallic test".to_string()));
+            let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0, None, None, None, None, Some("Metallic test".to_string()));
 
             let img = viewport.render(&ray_color_d, scene);
 
@@ -282,7 +329,7 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(EMPTY_M)),
             };
             let scene = Scene{spheres: spheres};
-            let viewport = Viewport::new_from_res(300, 200, samples, 10, 2.0, Some("Control for dielectric test".to_string()));
+            let viewport = Viewport::new_from_res(300, 200, samples, 10, 2.0, None, None, None, None, Some("Control for dielectric test".to_string()));
 
             let img = viewport.render(&ray_color_d, scene);
 
@@ -300,7 +347,7 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(EMPTY_M)),
             };
             let scene = Scene{spheres: spheres};
-            let viewport = Viewport::new_from_res(300, 200, samples, 10, 2.0, Some("Dielectric test".to_string()));
+            let viewport = Viewport::new_from_res(300, 200, samples, 10, 2.0, None, None, None, None, Some("Dielectric test".to_string()));
 
             let img = viewport.render(&ray_color_d, scene);
 
@@ -370,7 +417,7 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(EMPTY_M)),
             };
             let scene = Scene{spheres: spheres};
-            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, samples, 10, 2.0, Some("Control for dielectric test".to_string()));
+            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, samples, 10, 2.0, None, None, None, None, Some("Control for dielectric test".to_string()));
 
             let img = viewport.render_no_rand(&ray_color, scene);
 
@@ -384,7 +431,7 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(1.0, 1.0, 1.0)), Some(EMPTY_M)),
             };
             let scene = Scene{spheres: spheres};
-            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, samples, 10, 2.0, Some("Dielectric test".to_string()));
+            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, samples, 10, 2.0, None, None, None, None, Some("Dielectric test".to_string()));
 
             let img = viewport.render_no_rand(&ray_color, scene);
 
@@ -440,6 +487,56 @@ pub mod viewport{
 
             assert!(r_glass_image == c_glass_image, "Different glass images");
 
+        }
+
+    }
+
+    #[cfg(test)]
+    mod camera_tests{
+        use super::*;
+        use crate::write_img::img_writer::write_img_f32;
+        use crate::objects::objects::materials::{EMPTY_M, SCATTER_M, METALLIC_M, FUZZY3_M, GLASS_M, GLASSR_M};
+
+        const WIDTH: u64 = 400;
+        const HEIGHT: u64 = 300;
+        const SAMPLES: usize = 100;
+        const DEPTH: usize = 10;
+        const GAMMA: f32 = 2.0;
+
+        fn scene() -> Scene{
+            Scene{spheres: vec!
+                [
+                    Sphere::new(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.6, 0.6, 0.6)), Some(SCATTER_M)),
+                    Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M)),
+                    Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(METALLIC_M)),
+                    
+                ]
+            }
+        }
+
+        #[test]
+        fn default_settings(){
+            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, SAMPLES, DEPTH, GAMMA, None, None, None, None, Some("Camera: default test".to_string()));
+
+            let img = viewport.render(&ray_color_d, scene());
+
+            write_img_f32(img, "camera_default_test.png".to_string());
+        }
+        #[test]
+        fn fov_120(){
+            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, SAMPLES, DEPTH, GAMMA, Some(120.0), None, None, None, Some("Camera: fov 120 test".to_string()));
+
+            let img = viewport.render(&ray_color_d, scene());
+
+            write_img_f32(img, "camera_fov_120_test.png".to_string());
+        }
+        #[test]
+        fn upside_down(){
+            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, SAMPLES, DEPTH, GAMMA, None, None, None, Some(Vec3 { x: 0.0, y: -1.0, z: 0.0 }), Some("Camera: upside down test".to_string()));
+
+            let img = viewport.render(&ray_color_d, scene());
+
+            write_img_f32(img, "camera_upside_down_test.png".to_string());
         }
 
     }
