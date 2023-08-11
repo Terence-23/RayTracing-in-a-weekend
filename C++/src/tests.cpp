@@ -48,7 +48,7 @@ void viewport_test()
 {
     f32 aspect_ratio = 3.0 / 2;
     int width = 600;
-    Viewport viewport(width, aspect_ratio, 1);
+    Viewport viewport(1);
     auto img = viewport.Render(ray_colorV, Scene());
     write_ppm("viewport_test.ppm", img);
 }
@@ -68,7 +68,7 @@ void sphere_test()
 {
     f32 aspect_ratio = 3.0 / 2;
     int width = 600;
-    Viewport viewport(width, aspect_ratio, 1);
+    Viewport viewport(1);
     auto img = viewport.Render(ray_colorS, Scene());
     write_ppm("sphere_test.ppm", img);
 }
@@ -107,7 +107,7 @@ void scene_test()
         Sphere(vec3(0.5, 0, -1), 0.5), 
         Sphere(vec3(0, 0, -2), 1)};
     scene.spheres = spheres;
-    Viewport viewport(width, aspect_ratio, samples);
+    Viewport viewport(samples);
     auto img = viewport.Render(ray_colorSc, scene);
     write_ppm("scene_test.ppm", img);
 }
@@ -138,7 +138,7 @@ void sphere_normal_test()
 {
     f32 aspect_ratio = 3.0 / 2;
     int width = 600;
-    Viewport viewport(width, aspect_ratio, 1);
+    Viewport viewport(1);
     auto img = viewport.Render(ray_colorSN, Scene());
     write_ppm("sphere_normal_test.ppm", img);
     
@@ -188,7 +188,7 @@ void diffuse_test()
         Sphere(vec3(0, 0, -2), 1, materials::scatterM, vec3(0.2, 0.2, 0.2))};
     scene.spheres = spheres;
     // Viewport viewport(width, height, samples, 10);
-    Viewport viewport(width, aspect_ratio, samples, 10);
+    Viewport viewport(samples, 10);
     auto img = viewport.Render(ray_colorD, scene);
     write_ppm("diffuse_test.ppm", img);
 }
@@ -206,7 +206,7 @@ void metal_test()
         Sphere(vec3(0, -1000.6, -40), 1000, materials::fuzzy3, vec3(1, 0, 1))};
     scene.spheres = spheres;
     // Viewport viewport(width, height, samples, 10);
-    Viewport viewport(width, aspect_ratio, samples, 10);
+    Viewport viewport = Viewport(samples, 10);
     auto img = viewport.Render(ray_colorD, scene);
     write_ppm("metal_test.ppm", img);
 }
@@ -225,13 +225,13 @@ void glass_test()
         Sphere(vec3(0, -100.5, -1), 100, materials::scatterM, vec3(1, 0, 1))};
     scene.spheres = spheres;
     // Viewport viewport(width, height, samples, 10);
-    Viewport viewport(width, aspect_ratio, samples, 10);
+    Viewport viewport(samples, 10);
     auto img = viewport.Render(ray_colorD, scene);
     write_ppm("glass_test.ppm", img);
 }
 
 RGB_float ray_color_small(const Ray &r, const Scene& scene, uint depth, uint max_depth) {
-    std::cerr << "D: " << max_depth - depth << '\n';
+    // std::cerr << "D: " << max_depth - depth << '\n';
     if (depth >= max_depth) {
         // auto t = 0.5 * (r.direction.unit_vector().y + 1.0);
         // return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
@@ -259,13 +259,13 @@ RGB_float ray_color_small(const Ray &r, const Scene& scene, uint depth, uint max
         }
 
     if (hit.isHit()) {
-        std::cerr << "Hit\n";
-        std::cerr << min_hit.next << '\n';
+        // std::cerr << "Hit\n";
+        // std::cerr << min_hit.next << '\n';
         RGB_float col = ray_color_small(min_hit.next, scene, depth+1, max_depth) * min_hit.col_mod;
 
         return col;
     }
-    std::cerr << "Sky\n";
+    // std::cerr << "Sky\n";
     auto t = 0.5 * (r.direction.unit_vector().y + 1.0);
     return color(0.0, 0.0, 1.0);
     // return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
@@ -273,7 +273,7 @@ RGB_float ray_color_small(const Ray &r, const Scene& scene, uint depth, uint max
 
 
 void s_test(){
-    const int WIDTH(10), HEIGHT(10);
+    const uint WIDTH(10), HEIGHT(10);
     Scene scene;
     std::vector<Sphere> spheres = {
         Sphere(vec3(0/*-0.52*/, 0, -1), 0.5, materials::metallicM, vec3(1, 1, 1)), 
@@ -285,13 +285,52 @@ void s_test(){
         };
     scene.spheres = spheres;
     // Viewport viewport(width, height, samples, 10);
-    Viewport viewport(WIDTH, HEIGHT);
+    Viewport viewport = Viewport();
     auto img = viewport.Render_no_rand(ray_color_small, scene);
     write_ppm("test_c.ppm", img);
     scene.spheres[0].material = materials::glass;
     img = viewport.Render_no_rand(ray_color_small, scene);
     write_ppm("test.ppm", img);
 }
+
+void fov_test(){
+    f32 aspect_ratio = 3.0 / 2;
+    int width = 900;
+    uint samples = 100;
+    Scene scene;
+    std::vector<Sphere> spheres = {
+        Sphere(vec3(-0.52, 0, -1), 0.5, materials::scatterM, vec3(0.6, 0.6, 0.6)), 
+        Sphere(vec3(0.52, 0, -1), 0.5, materials::scatterM, vec3(1, 0.2, 0.2)), 
+        Sphere(vec3(0, 0, -3), 1, materials::metallicM, vec3(1, 1, 1)),
+        Sphere(vec3(0, -1000.6, -40), 1000, materials::fuzzy3, vec3(1, 0, 1))};
+    scene.spheres = spheres;
+    Camera cam1(400, 4/3, 90), cam2(400, 4/3, 120);
+    Viewport viewport1(cam1, samples, 10);
+    auto img = viewport1.Render(ray_colorD, scene);
+    write_ppm("fov_test90.ppm", img);
+    Viewport viewport2(cam2, samples, 10);
+    img = viewport2.Render(ray_colorD, scene);
+    write_ppm("fov_test120.ppm", img);
+
+}
+void rot_test(){
+    f32 aspect_ratio = 3.0 / 2;
+    int width = 900;
+    uint samples = 100;
+    Scene scene;
+    std::vector<Sphere> spheres = {
+        Sphere(vec3(-0.52, 0, -1), 0.5, materials::scatterM, vec3(0.6, 0.6, 0.6)), 
+        Sphere(vec3(0.52, 0, -1), 0.5, materials::scatterM, vec3(1, 0.2, 0.2)), 
+        Sphere(vec3(0, 0, -3), 1, materials::metallicM, vec3(1, 1, 1)),
+        Sphere(vec3(0, -1000.6, -40), 1000, materials::fuzzy3, vec3(1, 0, 1))};
+    scene.spheres = spheres;
+    Camera cam1(400, 4/3, 90, vec3(0,0,0), vec3(0, -1, 0), vec3(0, 0, -1));
+    Viewport viewport1(cam1, samples, 10);
+    auto img = viewport1.Render(ray_colorD, scene);
+    write_ppm("camera_rotation_test.ppm", img);
+    
+}
+
 
 class Test{
     public:
@@ -313,10 +352,12 @@ void run_tests()
         // Test("Sphere test", sphere_test), 
         // Test("Sphere normal test", sphere_normal_test), 
         // Test("Scene test", scene_test), 
-        // Test("Diffuse material test", diffuse_test),
-        // Test("Metal material test", metal_test),
-        // Test("Dielectric material test", glass_test),
-        Test("Dielectric material small test", s_test)
+        Test("Diffuse material test", diffuse_test),
+        Test("Metal material test", metal_test),
+        Test("Dielectric material test", glass_test),
+        // Test("Dielectric material small test", s_test),
+        Test("Camera fov test", fov_test),
+        Test("Camera rotation test", rot_test),
     };
     for (auto t: tests) t.run();
 }
