@@ -101,7 +101,7 @@ pub const glassM = Material{ .metallicness = 1.0, .opacity = 1.0, .ir = 1.5 };
 pub const glassRM = Material{ .metallicness = 1.0, .opacity = 1.0, .ir = 1 / glassM.ir };
 pub const fuzzy3M = Material{ .metallicness = 0.7 };
 
-fn ray_color(r: Ray, scene: Scene, depth: usize) Vec3 {
+pub fn ray_color(r: Ray, scene: Scene, depth: usize) Vec3 {
     if (depth <= 0) {
         return Vec3{ 0.0, 0.0, 0.0 };
     }
@@ -133,7 +133,7 @@ pub fn diffuseTest() !void {
     const w = 900;
     const h = 600;
     const samples = 100;
-    var view = Viewport{ .width = w, .height = h, .aspect_ratio = @intToFloat(f32, w) / @intToFloat(f32, h), .samples = samples };
+    var view = Viewport.init_def(w, @intToFloat(f32, w) / @intToFloat(f32, h), samples, 10, "Diffuse test");
     var spheres = try std.ArrayList(Sphere).initCapacity(gpa.allocator(), 4);
     try spheres.append(Sphere{ .origin = Vec3{ 0.5, 0.0, -1.0 }, .radius = 0.5, .mat = diffuseM, .col = Vec3{ 1.0, 0.2, 0.2 } });
     try spheres.append(Sphere{ .origin = Vec3{ -0.5, 0.0, -1.0 }, .radius = 0.5, .mat = diffuseM, .col = Vec3{ 0.8, 0.8, 1.0 } });
@@ -152,7 +152,7 @@ pub fn metalTest() !void {
     const w = 800;
     const h = 600;
     const samples = 100;
-    var view = Viewport{ .width = w, .height = h, .aspect_ratio = @intToFloat(f32, w) / @intToFloat(f32, h), .samples = samples, .depth = 10 };
+    var view = Viewport.init_def(w, @intToFloat(f32, w) / @intToFloat(f32, h), samples, 10, "Metal");
     var spheres = try std.ArrayList(Sphere).initCapacity(gpa.allocator(), 4);
     try spheres.append(Sphere{ .origin = Vec3{ -0.5, 0.0, -1.0 }, .radius = 0.5, .mat = fuzzy3M, .col = Vec3{ 0.6, 0.6, 0.6 } });
     try spheres.append(Sphere{ .origin = Vec3{ 0.5, 0.0, -1.0 }, .radius = 0.5, .mat = metallicM, .col = Vec3{ 0.5, 0.9, 0.9 } });
@@ -171,7 +171,7 @@ pub fn glassTest() !void {
     const w = 800;
     const h = 600;
     const samples = 100;
-    var view = Viewport{ .width = w, .height = h, .aspect_ratio = @intToFloat(f32, w) / @intToFloat(f32, h), .samples = samples, .depth = 10 };
+    var view = Viewport.init_def(w, @intToFloat(f32, w) / @intToFloat(f32, h), samples, 10, "Dielectric test");
     var spheres = try std.ArrayList(Sphere).initCapacity(gpa.allocator(), 4);
     // try spheres.append(Sphere{ .origin = Vec3{ -0.5, 0.0, -1.0 }, .radius = 0.5, .mat = fuzzy3M, .col = Vec3{ 0.6, 0.6, 0.6 } });
     // try spheres.append(Sphere{ .origin = Vec3{ 0.5, 0.0, -1.0 }, .radius = 0.5, .mat = metallicM, .col = Vec3{ 0.5, 0.9, 0.9 } });

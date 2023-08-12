@@ -25,9 +25,9 @@ pub fn vec_to_rgb(v: Vec3) rgb {
 
 pub fn cross_product(v: Vec3, u: Vec3) Vec3 {
     return Vec3{
-        v.y * u.z - v.z * u.y,
-        v.z * u.x - v.x * u.z,
-        v.x * u.y - v.y * u.x,
+        v[1] * u[2] - v[2] * u[1],
+        v[2] * u[0] - v[0] * u[2],
+        v[0] * u[1] - v[1] * u[0],
     };
 }
 pub fn vec_len2(v: Vec3) f32 {
