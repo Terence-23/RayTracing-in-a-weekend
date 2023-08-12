@@ -29,6 +29,13 @@ public:
         os << v.x << ' ' << v.y << ' ' << v.z;
         return os;
     }
+    inline static vec3 random_in_unit_disk() {
+        while (true) {
+            auto p = vec3(random_double(-1,1), random_double(-1,1), 0);
+            if (p.length2() < 1)
+                return p;
+        }
+    }
     inline bool near_zero() const {
         // Return true if the vector is close to zero in all dimensions.
         const auto s = 1e-8;

@@ -15,24 +15,27 @@ public:
     float vfov = 90;
     float aspect_ratio;
     uint width, height;
+    float focal_length, lens_radius;
     vec3 pixel_delta_u, pixel_delta_v;
     vec3 pixel00_loc;
     vec3 u, v, w;
     vec3 origin= vec3(0,0,0), vup = vec3(0, 1, 0), direction = vec3(0, 0, -1);
 
-    inline Camera(uint width, float aspect_ratio, float vfov, vec3 origin, vec3 vup, vec3 direction): 
+    inline Camera(uint width, float aspect_ratio, float vfov, vec3 origin, vec3 vup, vec3 direction, float lens_radius): 
         width(width),
         aspect_ratio(aspect_ratio),
         height(static_cast<uint>(width/aspect_ratio)),
         origin(origin),
         vup(vup.unit_vector()),
-        direction(direction.unit_vector())
+        direction(direction.unit_vector()),
+        focal_length(direction.length()),
+        lens_radius(lens_radius)
     {
         w = -this->direction;
         u = vup.cross(w).unit_vector();
         v = w.cross(u);
         auto h = tan(vfov * M_PI / 360);
-        auto viewport_height = 2 * h;
+        auto viewport_height = 2 * h * focal_length;
         auto viewport_width = aspect_ratio * viewport_height;
         vec3 viewport_u = viewport_width * u;
         vec3 viewport_v = viewport_height * -v;
@@ -47,13 +50,15 @@ public:
         height(static_cast<uint>(width/aspect_ratio)),
         origin(vec3(0, 0, 0)),
         vup(vec3(0, 1, 0)),
-        direction(vec3(0, 0, -1))
+        direction(vec3(0, 0, -1)),
+        focal_length(1),
+        lens_radius(0)
     {
         w = -this->direction;
         u = vup.cross(w).unit_vector();
         v = w.cross(u);
         auto h = tan(vfov * M_PI / 360);
-        auto viewport_height = 2 * h;
+        auto viewport_height = 2 * h * focal_length;
         auto viewport_width = aspect_ratio * viewport_height;
         vec3 viewport_u = viewport_width * u;
         vec3 viewport_v = viewport_height * -v;
@@ -70,7 +75,7 @@ public:
     uint samples_per_pixel;
     uint max_reflections;
     float gamma = 2;
-    Camera cam = Camera(300, 1.5, 90, vec3(0,0,0), vec3(0, 1, 0), vec3(0, 0, -1));
+    Camera cam = Camera(300, 1.5, 90, vec3(0,0,0), vec3(0, 1, 0), vec3(0, 0, -1), 0);
 
     inline Viewport(uint samples): 
         samples_per_pixel(samples),

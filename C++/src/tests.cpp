@@ -324,13 +324,30 @@ void rot_test(){
         Sphere(vec3(0, 0, -3), 1, materials::metallicM, vec3(1, 1, 1)),
         Sphere(vec3(0, -1000.6, -40), 1000, materials::fuzzy3, vec3(1, 0, 1))};
     scene.spheres = spheres;
-    Camera cam1(400, 4/3, 90, vec3(0,0,0), vec3(0, -1, 0), vec3(0, 0, -1));
+    Camera cam1(400, 4/3, 90, vec3(0,0,0), vec3(0, -1, 0), vec3(0, 0, -1), 0);
     Viewport viewport1(cam1, samples, 10);
     auto img = viewport1.Render(ray_colorD, scene);
     write_ppm("camera_rotation_test.ppm", img);
     
 }
+void blur_test(){
+    f32 aspect_ratio = 3.0 / 2;
+    int width = 900;
+    uint samples = 100;
+    Scene scene;
+    std::vector<Sphere> spheres = {
+        Sphere(vec3(-0.52, 0, -1.2), 0.4, materials::metallicM, vec3(0.7, 0.7, 0.7)), 
+        Sphere(vec3(0.52, 0, -1.2), 0.4, materials::glass, vec3(1, 1, 1)), 
+        Sphere(vec3(0, 0, -4), 1, materials::scatterM, vec3(0, 1, 1)),
+        Sphere(vec3(0, -1000.6, -40), 1000, materials::scatterM, vec3(1, 0, 1))};
+    scene.spheres = spheres;
+    Camera cam1(400, 4/3, 90, vec3(0, 0, 0), vec3(0, 1, 0), vec3(0, 0, -1), 0.01);
+    Viewport viewport1(cam1, samples, 10);
+    auto img = viewport1.Render(ray_colorD, scene);
+    write_ppm("blur_test.ppm", img);
+    
 
+}
 
 class Test{
     public:
@@ -347,17 +364,18 @@ class Test{
 void run_tests()
 {
     std::vector<Test> tests = {
-        // Test("Write test", write_test), 
-        // Test("Viewport test", viewport_test), 
-        // Test("Sphere test", sphere_test), 
-        // Test("Sphere normal test", sphere_normal_test), 
-        // Test("Scene test", scene_test), 
+        Test("Write test", write_test), 
+        Test("Viewport test", viewport_test), 
+        Test("Sphere test", sphere_test), 
+        Test("Sphere normal test", sphere_normal_test), 
+        Test("Scene test", scene_test), 
         Test("Diffuse material test", diffuse_test),
         Test("Metal material test", metal_test),
         Test("Dielectric material test", glass_test),
-        // Test("Dielectric material small test", s_test),
+        Test("Dielectric material small test", s_test),
         Test("Camera fov test", fov_test),
         Test("Camera rotation test", rot_test),
+        Test("Depth of field test", blur_test),
     };
     for (auto t: tests) t.run();
 }

@@ -37,7 +37,8 @@ Img Viewport::Render(RGB_float (*ray_color)(const Ray &r, const Scene &scene, ui
             
             for (int s = 0; s < samples_per_pixel; s++)
             {
-                Ray r(cam.origin, cam.pixel00_loc + (i + random_double()) * cam.pixel_delta_u + (j+ random_double()) * cam.pixel_delta_v);
+                auto random_point = vec3::random_in_unit_disk();
+                Ray r(cam.origin + (random_point.x * cam.u + random_point.y * cam.v) * cam.lens_radius , cam.pixel00_loc + (i + random_double()) * cam.pixel_delta_u + (j+ random_double()) * cam.pixel_delta_v);
                 // std::cerr << r.direction << '\n';
                 if (std::isnan(r.direction.x) ) throw -1;
                 pixel_color += ray_color(r, scene, 0, this->max_reflections);
