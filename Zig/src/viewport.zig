@@ -40,8 +40,22 @@ pub const Viewport = struct {
     u: Vec3,
     p_delta_u: Vec3,
     p_delta_v: Vec3,
+
+    lens_radius: f32 = 0,
+    focal_length: f32 = 1.0,
+
     upper_left_corner: Vec3,
     msg: []const u8 = "",
+
+    pub fn rand_vec_disk_unit() Vec3 {
+        var prng = std.rand.DefaultPrng.init(@truncate(u64, @bitCast(u128, std.time.nanoTimestamp())));
+        return (blk: while (true) {
+            var x = Vec3{ prng.random().float(f32), prng.random().float(f32), 0.0 } * Vec3{ 2.0, 2.0, 2.0 } - Vec3{ 1.0, 1.0, 0.0 };
+            if (x[0] * x[0] + x[1] * x[1] <= 1.0) {
+                break :blk x;
+            }
+        });
+    }
 
     pub fn init(width: u32, aspect_ratio: f32, samples: usize, depth: usize, _gamma: f32, vfov: f32, origin: Vec3, direction: Vec3, vup: Vec3, msg: []const u8) Viewport {
         var c_origin = origin;
@@ -73,7 +87,7 @@ pub const Viewport = struct {
         // var lower_left_corner =
         //     c_origin - horizontal / 2_f32 - vertical / 2_f32 - Vec3::new(0.0, 0.0, focal_length);
 
-        return Viewport{ .samples = samples, .aspect_ratio = aspect_ratio, .width = width, .height = height, .origin = c_origin, .w = w, .v = v, .u = u, .p_delta_u = pixel_delta_u, .p_delta_v = pixel_delta_v, .upper_left_corner = pixel00_loc, .depth = depth, .gamma = _gamma, .msg = msg };
+        return Viewport{ .samples = samples, .aspect_ratio = aspect_ratio, .width = width, .height = height, .origin = c_origin, .w = w, .v = v, .u = u, .p_delta_u = pixel_delta_u, .p_delta_v = pixel_delta_v, .upper_left_corner = pixel00_loc, .depth = depth, .gamma = _gamma, .msg = msg, .focal_length = ray.vec_len(direction) };
     }
     pub fn init_def(width: u32, aspect_ratio: f32, samples: usize, depth: usize, msg: []const u8) Viewport {
         return init(width, aspect_ratio, samples, depth, 2.0, 90.0, Vec3{ 0, 0, 0 }, Vec3{ 0, 0, -1 }, Vec3{ 0, 1, 0 }, msg);
@@ -100,7 +114,8 @@ pub const Viewport = struct {
             for (0..self.width) |i| {
                 var col = Vec3{ 0.0, 0.0, 0.0 };
                 for (0..self.samples) |_| {
-                    var r = Ray{ .origin = self.origin, .direction = self.upper_left_corner +
+                    var random_point = rand_vec_disk_unit();
+                    var r = Ray{ .origin = self.origin + (self.u * @splat(3, random_point[0]) + self.v * @splat(3, random_point[1])) * @splat(3, self.lens_radius), .direction = self.upper_left_corner +
                         self.p_delta_u * @splat(3, @intToFloat(f32, i) + rng.random().float(f32)) + self.p_delta_v * @splat(3, @intToFloat(f32, j) + rng.random().float(f32)) };
                     col += color_f(r, scene, self.depth);
                 }
@@ -185,6 +200,8 @@ pub fn cameraTest() !void {
 
     var view = Viewport.init_def(w, @intToFloat(f32, w) / @intToFloat(f32, h), samples, 10, "Camera test default");
     try view.Render(mats.ray_color, scene, "Camera_default_test.png");
+    view.lens_radius = 0.015;
+    try view.Render(mats.ray_color, scene, "Camera_blur_test.png");
 
     view = Viewport.init(w, @intToFloat(f32, w) / @intToFloat(f32, h), samples, 10, 2.0, 120, Vec3{ 0, 0, 0 }, Vec3{ 0, 0, -1 }, Vec3{ 0, 1, 0 }, "Camera fov 120 test");
     try view.Render(mats.ray_color, scene, "Camera_fov120_test.png");
