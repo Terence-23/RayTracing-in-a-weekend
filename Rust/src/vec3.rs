@@ -152,6 +152,18 @@ pub struct Vec3 {
             }.unit();
             // return p.unit();
         }
+        pub fn random_in_unit_disk() ->Vec3{
+            // println!("rand_vec");
+            return loop{
+                let p = Vec3 { x: random::<f32>() * 2.0 - 1.0, y: random::<f32>() * 2.0 - 1.0, z: 0.0};
+                // println!("vec: {:?}, len: {}", p, p.x * p.x + p.y * p.y + p.z * p.z);
+                if (p.x * p.x + p.y * p.y) <= 1.0 {
+                    break p;
+                }
+            }
+            // return p.unit();
+        }
+
         pub fn reflect(&self, n: Vec3) -> Vec3{
             *self - n * 2.0 * self.dot(n)
         }

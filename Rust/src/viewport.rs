@@ -26,6 +26,9 @@ pub mod viewport{
         p_delta_u: Vec3,
         p_delta_v: Vec3,
 
+        focal_length: f32,
+        lens_radius: f32,
+
         pub depth: usize,
         pub gamma:f32,
         pub msg: String
@@ -38,10 +41,8 @@ pub mod viewport{
         Vec3 { x: col.x.powf(gamma), y: col.y.powf(gamma), z: col.z.powf(gamma) }
     }
     impl Viewport{
-        pub fn new(width:u64, aspect_ratio:f32, samples: usize, depth:usize, gamma:f32, vfov:Option<f32>, origin: Option<Vec3>, direction: Option<Vec3>, vup: Option<Vec3>, msg: Option<String>)-> Self{
+        pub fn new(width:u64, aspect_ratio:f32, samples: usize, depth:usize, gamma:f32, vfov:Option<f32>, origin: Option<Vec3>, direction: Option<Vec3>, vup: Option<Vec3>, msg: Option<String>, lens_radius: Option<f32>)-> Self{
             
-            
-
             let c_origin = match origin{
                 Some(v) => v,
                 None => Vec3::new(0.0, 0.0, 0.0)
@@ -100,6 +101,11 @@ pub mod viewport{
                 p_delta_v:pixel_delta_v,
 
                 upper_left_corner:pixel00_loc,
+                lens_radius: match lens_radius{
+                    Some(n) => n,
+                    None => 0.0
+                },
+                focal_length: c_dir.length(),
 
                 depth:depth,
                 gamma: gamma,
@@ -109,8 +115,8 @@ pub mod viewport{
                 }
             }
         }
-        pub fn new_from_res(width:u64, height:u64, samples:usize, depth:usize, gamma: f32, vfov:Option<f32>, origin: Option<Vec3>, direction: Option<Vec3>, vup: Option<Vec3>, msg: Option<String>) -> Self{
-            Self::new(width, width as f32 / height as f32, samples, depth, gamma, vfov, origin, direction, vup, msg)
+        pub fn new_from_res(width:u64, height:u64, samples:usize, depth:usize, gamma: f32, vfov:Option<f32>, origin: Option<Vec3>, direction: Option<Vec3>, vup: Option<Vec3>, msg: Option<String>, lens_radius: Option<f32>) -> Self{
+            Self::new(width, width as f32 / height as f32, samples, depth, gamma, vfov, origin, direction, vup, msg, lens_radius)
         }
 
         pub fn render(&self, ray_color: &dyn Fn(Ray, &Scene, usize)->Rgb<f32>, scene: Scene) -> Img{
@@ -135,8 +141,10 @@ pub mod viewport{
                 for i in 0..self.width {
                     let mut color = Vec3{x:0.0, y: 0.0, z:0.0};
                     for _ in 0..self.samples{
+                        let random_point = Vec3::random_in_unit_disk();
+                
                         let r = Ray::new(
-                            self.origin,
+                            self.origin  + (self.u * random_point.x  + self.v * random_point.y) * self.lens_radius,
                             self.upper_left_corner +
                                self.p_delta_u * (i as f32 + rng.gen::<f32>()) + self.p_delta_v * (j as f32 + rng.gen::<f32>()),
                         );
@@ -272,7 +280,7 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: 0.0, y: 0.0, z: 0.0,},1.0, None, None),
             };
             let scene = Scene{spheres: spheres};
-            let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0, None, None, None, None, Some("Viewport object test".to_string()));
+            let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0, None, None, None, None, Some("Viewport object test".to_string()), None);
 
             let img = viewport.render(&ray_color, scene);
 
@@ -295,7 +303,7 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(SCATTER_M)),
             };
             let scene = Scene{spheres: spheres};
-            let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0, None, None, None, None, Some("Diffuse test".to_string()));
+            let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0, None, None, None, None, Some("Diffuse test".to_string()), None);
 
             let img = viewport.render(&ray_color_d, scene);
 
@@ -312,7 +320,7 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: 0.0, y: -1000.9, z: -5.0,}, 1000.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(EMPTY_M)),
             };
             let scene = Scene{spheres: spheres};
-            let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0, None, None, None, None, Some("Metallic test".to_string()));
+            let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0, None, None, None, None, Some("Metallic test".to_string()), None);
 
             let img = viewport.render(&ray_color_d, scene);
 
@@ -329,7 +337,7 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(EMPTY_M)),
             };
             let scene = Scene{spheres: spheres};
-            let viewport = Viewport::new_from_res(300, 200, samples, 10, 2.0, None, None, None, None, Some("Control for dielectric test".to_string()));
+            let viewport = Viewport::new_from_res(300, 200, samples, 10, 2.0, None, None, None, None, Some("Control for dielectric test".to_string()), None);
 
             let img = viewport.render(&ray_color_d, scene);
 
@@ -347,7 +355,7 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(EMPTY_M)),
             };
             let scene = Scene{spheres: spheres};
-            let viewport = Viewport::new_from_res(300, 200, samples, 10, 2.0, None, None, None, None, Some("Dielectric test".to_string()));
+            let viewport = Viewport::new_from_res(300, 200, samples, 10, 2.0, None, None, None, None, Some("Dielectric test".to_string()), None);
 
             let img = viewport.render(&ray_color_d, scene);
 
@@ -417,7 +425,7 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(EMPTY_M)),
             };
             let scene = Scene{spheres: spheres};
-            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, samples, 10, 2.0, None, None, None, None, Some("Control for dielectric test".to_string()));
+            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, samples, 10, 2.0, None, None, None, None, Some("Control for dielectric test".to_string()), None);
 
             let img = viewport.render_no_rand(&ray_color, scene);
 
@@ -431,7 +439,7 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(1.0, 1.0, 1.0)), Some(EMPTY_M)),
             };
             let scene = Scene{spheres: spheres};
-            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, samples, 10, 2.0, None, None, None, None, Some("Dielectric test".to_string()));
+            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, samples, 10, 2.0, None, None, None, None, Some("Dielectric test".to_string()), None);
 
             let img = viewport.render_no_rand(&ray_color, scene);
 
@@ -509,14 +517,13 @@ pub mod viewport{
                     Sphere::new(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.6, 0.6, 0.6)), Some(SCATTER_M)),
                     Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M)),
                     Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(METALLIC_M)),
-                    
                 ]
             }
         }
 
         #[test]
         fn default_settings(){
-            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, SAMPLES, DEPTH, GAMMA, None, None, None, None, Some("Camera: default test".to_string()));
+            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, SAMPLES, DEPTH, GAMMA, None, None, None, None, Some("Camera: default test".to_string()), None);
 
             let img = viewport.render(&ray_color_d, scene());
 
@@ -524,7 +531,7 @@ pub mod viewport{
         }
         #[test]
         fn fov_120(){
-            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, SAMPLES, DEPTH, GAMMA, Some(120.0), None, None, None, Some("Camera: fov 120 test".to_string()));
+            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, SAMPLES, DEPTH, GAMMA, Some(120.0), None, None, None, Some("Camera: fov 120 test".to_string()), None);
 
             let img = viewport.render(&ray_color_d, scene());
 
@@ -532,11 +539,19 @@ pub mod viewport{
         }
         #[test]
         fn upside_down(){
-            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, SAMPLES, DEPTH, GAMMA, None, None, None, Some(Vec3 { x: 0.0, y: -1.0, z: 0.0 }), Some("Camera: upside down test".to_string()));
+            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, SAMPLES, DEPTH, GAMMA, None, None, None, Some(Vec3 { x: 0.0, y: -1.0, z: 0.0 }), Some("Camera: upside down test".to_string()), None);
 
             let img = viewport.render(&ray_color_d, scene());
 
             write_img_f32(img, "camera_upside_down_test.png".to_string());
+        }
+        #[test]
+        fn depth_of_field(){
+            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, SAMPLES, DEPTH, GAMMA, None, None, None, Some(Vec3 { x: 0.0, y: -1.0, z: 0.0 }), Some("Camera: depth of field test".to_string()), Some(0.015));
+
+            let img = viewport.render(&ray_color_d, scene());
+
+            write_img_f32(img, "camera_depth_of_field_test.png".to_string());
         }
 
     }
