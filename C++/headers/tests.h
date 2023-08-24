@@ -10,6 +10,8 @@
 #include"viewport.h"
 #include "hit.h"
 
+#include<cassert>
+
 #define f32 float 
 
 void write_test();

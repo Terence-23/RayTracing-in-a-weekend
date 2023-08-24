@@ -36,6 +36,52 @@ namespace materials
         inline Material(float metallicness, float opacity, float ir): metallicness(metallicness), opacity(opacity), ir(ir){}
         inline Material(float metallicness): metallicness(metallicness), opacity(0), ir(1){}
 
+        inline std::string to_json(){
+            return "{\"metallicness\":" + std::to_string(metallicness) + ",\"opacity\":" + std::to_string(opacity) + ",\"ir\":" + std::to_string(ir) + '}'; 
+        }
+        static inline Material from_json(std::string json){
+            std::cout << "Material: " << json << '\n';
+            json = remove_whitespace(json);
+            size_t l = 0;
+            if(json[l] != '{'){
+                l = json.find('{');
+            }
+            size_t r = find_closing(json, l, json.size());
+            
+            float metallicness = -1, opacity = -1, ir = -1;
+
+            // std::cout << "l: " << l << " r: " << r << '\n';
+            for(size_t i = l+1; i < r; ++i){
+                if (json[i] == ':'){
+                    if (json.substr(l+1, i - l - 1) == "\"metallicness\""){
+                        size_t c = json.find_first_of(",}", ++i);
+                        metallicness = atof(json.substr(i, c - i).c_str());
+                        // std::cout << "Found metallicness: " << metallicness << '\n';
+
+                    } else if (json.substr(l+1, i - l - 1) == "\"opacity\""){
+
+                        size_t c = json.find_first_of(",}", ++i);
+                        opacity = atof(json.substr(i, c - i).c_str());
+                        // std::cout << "Found opacity: " << opacity << '\n';
+
+                    } else if (json.substr(l+1, i - l - 1) == "\"ir\""){
+
+                        size_t c = json.find_first_of(",}", ++i);
+                        ir = atof(json.substr(i, c - i).c_str());
+                        // std::cout << "Found ir: " << ir << '\n';
+
+                    }
+                }
+                else if (json[i] == ','){
+                    l = i;
+                    // std:: cerr << "New l: " << l << '\n';
+                }
+            }
+            
+            std::cout << "Material: " << metallicness << ' ' << opacity << ' ' << ir << '\n';
+            return Material(metallicness, opacity, ir);
+        }
+
         inline Ray onHit(Hit h, Ray r) const {
             if (0 < opacity){
 
@@ -75,7 +121,9 @@ namespace materials
             return reflect;
         }
 
-
+        inline bool operator==(const Material& v)const{
+            return metallicness == v.metallicness && opacity == v.opacity && ir == v.ir;
+        }
     };
 
     const Material metallicM = Material(1.0);

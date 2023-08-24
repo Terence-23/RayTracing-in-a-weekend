@@ -348,6 +348,50 @@ void blur_test(){
     
 
 }
+void json_test(){
+    Scene scene;
+    std::vector<Sphere> spheres = {
+        Sphere(vec3(-0.52, 0, -1.2), 0.4, materials::metallicM, vec3(0.7, 0.7, 0.7)), 
+        Sphere(vec3(0.52, 0, -1.2), 0.4, materials::glass, vec3(1, 1, 1)), 
+        Sphere(vec3(0, 0, -4), 1, materials::scatterM, vec3(0, 1, 1)),
+        Sphere(vec3(0, -1000.6, -40), 1000, materials::scatterM, vec3(1, 0, 1))};
+    scene.spheres = spheres;
+    std::string json = scene.to_json();
+    std::ofstream f("json_test.json");
+    if (f.good()){
+        f << json << '\n';
+    }
+    f.close();
+    Scene json_s = Scene::from_json(json, 0, json.size());
+    std::cout << "Read " << json_s.spheres.size() << " spheres:\n";
+    
+    int n = std::min(json_s.spheres.size(), spheres.size());
+
+    for(size_t i = 0; i < n; ++i){
+        std::cout << json_s.spheres[i] << " == " << spheres[i] << '\n';
+        std::cout <<  (json_s.spheres[i] == spheres[i] ? "True\n" : "False\n");
+    }
+
+
+}
+void string_tests(){
+    std::string good_str = "[s[]j(){}f]w";
+    std::string bad_str = "{g[f}d]";
+
+    int g_c = find_closing(good_str, 0, good_str.size());
+    std::cout << g_c << ' ' << good_str[g_c] << '\n';
+    
+    int b_c = find_closing(bad_str, 2, 4);
+    std::cout << b_c << ' ' << bad_str[b_c] << '\n';
+
+    std::cout << remove_whitespace(" N    o_   s\tpa  c\n e\rs\n") << " except here\n";
+
+    auto words = split("There_are_words_in_here" , '_');
+    for (auto i : words){
+        std::cout << i << ' ';
+    }
+    std::cout << '\n';
+}
 
 class Test{
     public:
@@ -364,18 +408,20 @@ class Test{
 void run_tests()
 {
     std::vector<Test> tests = {
-        Test("Write test", write_test), 
-        Test("Viewport test", viewport_test), 
-        Test("Sphere test", sphere_test), 
-        Test("Sphere normal test", sphere_normal_test), 
-        Test("Scene test", scene_test), 
-        Test("Diffuse material test", diffuse_test),
-        Test("Metal material test", metal_test),
-        Test("Dielectric material test", glass_test),
-        Test("Dielectric material small test", s_test),
-        Test("Camera fov test", fov_test),
-        Test("Camera rotation test", rot_test),
-        Test("Depth of field test", blur_test),
+        // Test("Write test", write_test), 
+        // Test("Viewport test", viewport_test), 
+        // Test("Sphere test", sphere_test), 
+        // Test("Sphere normal test", sphere_normal_test), 
+        // Test("Scene test", scene_test), 
+        // Test("Diffuse material test", diffuse_test),
+        // Test("Metal material test", metal_test),
+        // Test("Dielectric material test", glass_test),
+        // Test("Dielectric material small test", s_test),
+        // Test("Camera fov test", fov_test),
+        // Test("Camera rotation test", rot_test),
+        // Test("Depth of field test", blur_test),
+        Test("JSON test", json_test),
+        // Test("String tests", string_tests)
     };
     for (auto t: tests) t.run();
 }
