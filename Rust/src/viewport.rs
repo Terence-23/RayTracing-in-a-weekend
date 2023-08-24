@@ -1,11 +1,42 @@
 #[allow(dead_code)]
+pub mod errors{
+    use std::error::Error;
+
+    #[derive(Debug)]
+    pub struct ParseError{
+        pub source: Option<json::Error>
+    }
+    impl std::fmt::Display for ParseError{
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "ParseError: {}", 
+                match &self.source{
+                    Some(e) => e.to_string(),
+                    None => "None".to_string()
+                }
+            )
+        }
+    }
+    impl Error for ParseError{
+        fn source(&self) -> Option<&(dyn Error + 'static)> {
+            None
+        }
+
+       }
+}
+
+#[allow(dead_code)]
 pub mod viewport{
+
+    use std::iter::zip;
 
     use crate::vec3::{ray::Ray, vec3::Vec3};
     use image::Rgb;
     use indicatif::{ProgressBar, ProgressStyle};
     use rand::Rng;
-    use crate::objects::objects::{NO_HIT, Sphere, Object}; 
+    use json::JsonValue;
+    use crate::objects::objects::{NO_HIT, Sphere, Object};
+
+    use super::errors; 
 
     type Img = Vec<Vec<Rgb<f32>>>;
 
@@ -34,9 +65,50 @@ pub mod viewport{
         pub msg: String
     }
     
+    #[derive(Debug, Clone)]
     pub struct Scene{
         spheres: Vec<Sphere>
     }
+    
+    impl PartialEq for Scene{
+        fn eq(&self, other: &Self) -> bool {
+            for (i, o) in zip(self.spheres.to_owned(), other.spheres.to_owned()  ){
+                if i != o{
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    impl Into<JsonValue> for Scene{
+        fn into(self) -> JsonValue {
+            json::object! {
+                spheres:self.spheres
+            }
+        }
+    }
+    impl TryFrom<JsonValue> for Scene{
+        type Error = errors::ParseError;
+
+        fn try_from(value: JsonValue) -> Result<Self, Self::Error> {
+            let mut spheres: Vec<Sphere> = Vec::new();
+
+            if !value["spheres"].is_array() {return Err(Self::Error{source: None});}
+
+            for i in value["spheres"].members(){
+                let sphere: Result<Sphere, <Sphere as TryFrom<JsonValue>>::Error> = TryInto::try_into(i.to_owned());
+                match sphere {
+                    Ok(s) => spheres.push(s),
+                    Err(e) => return Err(e),
+                }
+            }
+
+
+            Ok(Scene { spheres: spheres })
+        }
+    }
+    
     fn gamma_correct(col: Vec3, gamma: f32) -> Vec3{
         Vec3 { x: col.x.powf(gamma), y: col.y.powf(gamma), z: col.z.powf(gamma) }
     }
@@ -238,7 +310,7 @@ pub mod viewport{
 
     #[cfg(test)]
     mod tests{
-        use super::*;
+        use super::{Scene, Vec3, Ray, Viewport, Rgb, Sphere, Object, NO_HIT};
         use crate::write_img::img_writer::write_img_f32;
 
         fn ray_color(r: Ray, scene: &Scene, _:usize) -> Rgb<f32> {
@@ -503,7 +575,7 @@ pub mod viewport{
     mod camera_tests{
         use super::*;
         use crate::write_img::img_writer::write_img_f32;
-        use crate::objects::objects::materials::{EMPTY_M, SCATTER_M, METALLIC_M, FUZZY3_M, GLASS_M, GLASSR_M};
+        use crate::objects::objects::materials::{SCATTER_M, METALLIC_M};
 
         const WIDTH: u64 = 400;
         const HEIGHT: u64 = 300;
@@ -553,6 +625,56 @@ pub mod viewport{
 
             write_img_f32(img, "camera_depth_of_field_test.png".to_string());
         }
+
+    }
+
+    #[cfg(test)]
+    mod json_tests{
+        use super::*;
+        use crate::objects::objects::materials::{SCATTER_M, METALLIC_M};
+
+        #[test]
+        fn serialize_test(){
+
+            let scene = Scene{spheres: vec!
+                [
+                    Sphere::new(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.6, 0.6, 0.6)), Some(SCATTER_M)),
+                    Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M)),
+                    Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(METALLIC_M)),
+                ]
+            };
+            let obj:JsonValue = scene.to_owned().into();
+            println!("{:#}", obj);
+            println!("{:#}", obj["spheres"]);
+
+            let json_s = match Scene::try_from(obj){
+                Ok(s) => s,
+                Err(e) => panic!("{}" ,e)
+            };
+            println!("Scene: {:?}", json_s);
+
+       }
+       #[test]
+       fn deserialize_test(){
+            let scene = Scene{spheres: vec!
+                [
+                    Sphere::new(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.6, 0.6, 0.6)), Some(SCATTER_M)),
+                    Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M)),
+                    Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(METALLIC_M)),
+                ]
+            };
+            let obj:JsonValue = scene.to_owned().into();
+            println!("{:#}", obj);
+            println!("{:#}", obj["spheres"]);
+
+            let json_s = match Scene::try_from(obj){
+                Ok(s) => s,
+                Err(e) => panic!("{}" ,e)
+            };
+            println!("Scene: {:?}", json_s);
+
+            assert_eq!(scene, json_s);
+       }
 
     }
 }

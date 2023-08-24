@@ -4,6 +4,8 @@ pub mod objects {
 
     use crate::vec3::{ray::Ray, vec3::Vec3};
     use self::materials::Material;
+    use json::JsonValue;
+    
 
     #[derive(Clone, Copy)]
     pub struct Hit{
@@ -14,16 +16,16 @@ pub mod objects {
         pub mat: Material,
     }
 
-impl Debug for Hit {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Hit")
-        .field("t", &self.t)
-        .field("normal", &self.normal)
-        .field("point", &self.point)
-        .field("col_mod", &self.col_mod)
-        .finish()
+    impl Debug for Hit {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.debug_struct("Hit")
+            .field("t", &self.t)
+            .field("normal", &self.normal)
+            .field("point", &self.point)
+            .field("col_mod", &self.col_mod)
+            .finish()
+        }
     }
-}
 
     impl PartialEq for Hit {
         fn eq(&self, other: &Self) -> bool {
@@ -52,14 +54,45 @@ impl Debug for Hit {
     }
     #[allow(dead_code, unused_imports)]
     pub mod materials{
-        use super::Hit;
+        use super::{Hit, JsonValue};
         use crate::vec3::{ray::Ray, vec3::Vec3};
         use rand::random;
-        #[derive(Debug, Clone, Copy)]
+        #[derive(Debug, Clone, Copy, PartialEq)]
         pub struct Material{
             pub metallicness: f32, 
             pub opacity: f32,
             pub ir: f32
+        }
+        impl Into<JsonValue> for Material{
+            fn into(self) -> JsonValue {
+                json::object! {
+                    metallicness: self.metallicness,
+                    opacity: self.opacity,
+                    ir: self.ir    
+                }
+            }
+        }
+        impl TryFrom<JsonValue> for Material{
+            type Error = crate::viewport::errors::ParseError;
+
+            fn try_from(value: JsonValue) -> Result<Self, Self::Error> {
+                Ok(
+                    Material { 
+                        metallicness: match value["metallicness"].as_f32(){
+                            Some(x) => x,
+                            None => return Err(Self::Error{source: None})
+                        }, 
+                        opacity: match value["opacity"].as_f32(){
+                            Some(x) => x,
+                            None => return Err(Self::Error{source: None})
+                        }, 
+                        ir: match value["ir"].as_f32(){
+                            Some(x) => x,
+                            None => return Err(Self::Error{source: None})
+                        }, 
+                    }
+                )
+            }
         }
         impl Material{
             pub fn new(metallicness: f32, opacity: f32, ir: f32) -> Self{
@@ -147,7 +180,7 @@ impl Debug for Hit {
         
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct Sphere {
         pub origin: Vec3,
         pub radius: f32,
@@ -155,6 +188,7 @@ impl Debug for Hit {
         pub mat: Material,
         
     }
+
     // impl Debug for Sphere<'_>{
     //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     //         f.debug_struct("Sphere")
@@ -164,7 +198,42 @@ impl Debug for Hit {
     //         .finish()
     //     }
     // }
+    impl Into<JsonValue> for Sphere{
+        fn into(self) -> JsonValue {
+            json::object! {
+                origin: self.origin,
+                radius: self.radius,
+                col_mod: self.col_mod,
+                material: self.mat,
+            }
+        }
+    }
+    impl TryFrom<JsonValue> for Sphere{
+        type Error = crate::viewport::errors::ParseError;
 
+        fn try_from(value: JsonValue) -> Result<Self, Self::Error> {
+            Ok(
+                Sphere { 
+                    origin: match Vec3::try_from(value["origin"].to_owned()){
+                        Ok(v) => v,
+                        Err(e) => return Err(e)
+                    }, 
+                    radius: match value["radius"].as_f32(){
+                        Some(x) => x,
+                        None => return Err(Self::Error{source: None})
+                    }, 
+                    col_mod: match Vec3::try_from(value["col_mod"].to_owned()){
+                        Ok(v) => v,
+                        Err(e) => return Err(e)
+                    }, 
+                    mat: match Material::try_from(value["material"].to_owned()){
+                        Ok(v) => v,
+                        Err(e) => return Err(e)
+                    } 
+                }
+            )
+        }
+    }
     impl Object for Sphere {
         fn collide(&self, r: Ray) -> bool {
             let oc = r.origin - self.origin;
@@ -211,6 +280,8 @@ impl Debug for Hit {
                 },
             }
         }
+
+        
     }
 
     
