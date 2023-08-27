@@ -11,7 +11,6 @@ use viewport::viewport::{Scene, Viewport};
 use write_img::img_writer::write_img_f32;
 
 use tokio;
-use futures::prelude::*;
 
 
 
@@ -79,7 +78,7 @@ fn main() {
         println!("Rendering {} samples", viewport.height as u128 * viewport.width as u128 * SAMPLES as u128);
         let before = Instant::now();
         
-        let mut rt = tokio::runtime::Runtime::new().unwrap();
+        let rt = tokio::runtime::Runtime::new().unwrap();
         let future = viewport::viewport::async_render(viewport.to_owned(), ray_color_d, scene.to_owned());
         let img = rt.block_on(future);
         write_img_f32(img, "render_async.png".to_string());

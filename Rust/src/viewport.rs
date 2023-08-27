@@ -131,7 +131,7 @@ pub mod viewport{
 
         for j in 0..(viewport.height as usize){
             tasks.push(
-                tokio::spawn(render_row(viewport.to_owned(), ray_color, (scene.to_owned()), inv_g, j))
+                tokio::spawn(render_row(viewport.to_owned(), ray_color, scene.to_owned(), inv_g, j))
             );
         }
         for t in tasks{
