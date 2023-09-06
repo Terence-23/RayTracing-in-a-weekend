@@ -1,14 +1,54 @@
 #[allow(dead_code)]
 pub mod vec3 {
     use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign, Neg};
+    use json::JsonValue;
     use rand::random;
 
     use image::Rgb;
-    #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Vec3 {
+
+    use crate::viewport::errors;
+    #[derive(Debug, Clone, Copy)]
+    pub struct Vec3 {
         pub x: f32,
         pub y: f32,
         pub z: f32,
+    }
+
+impl PartialEq for Vec3 {
+    fn eq(&self, other: &Self) -> bool {
+        (*self - *other).close_to_zero()
+    }
+}
+    impl Into<JsonValue> for Vec3{
+        fn into(self) -> JsonValue {
+            json::object! {
+                x: self.x,
+                y: self.y,
+                z: self.z
+            }
+        }
+    }
+    impl TryFrom<JsonValue> for Vec3{
+        type Error = errors::ParseError;
+
+        fn try_from(value: JsonValue) -> Result<Self, Self::Error> {
+            Ok(
+                Vec3 { 
+                    x: match value["x"].as_f32(){
+                        Some(x) => x,
+                        None => return Err(Self::Error{source: None})
+                    }, 
+                    y: match value["y"].as_f32(){
+                        Some(x) => x,
+                        None => return Err(Self::Error{source: None})
+                    }, 
+                    z: match value["z"].as_f32(){
+                        Some(x) => x,
+                        None => return Err(Self::Error{source: None})
+                    } 
+                }
+            )
+        }
     }
     impl Neg for Vec3{
         type Output = Self;
@@ -168,8 +208,10 @@ pub struct Vec3 {
             *self - n * 2.0 * self.dot(n)
         }
         pub fn close_to_zero(&self) -> bool{
-            self.x.abs() < 1e-8 && self.y.abs() < 1e-8 && self.z.abs() < 1e-8
+            self.x.abs() < 1e-7 && self.y.abs() < 1e-7 && self.z.abs() < 1e-7
         }
+
+        
 
     }
 }

@@ -1,14 +1,46 @@
 #[allow(dead_code)]
+pub mod errors{
+    use std::error::Error;
+
+    #[derive(Debug)]
+    pub struct ParseError{
+        pub source: Option<json::Error>
+    }
+    impl std::fmt::Display for ParseError{
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "ParseError: {}", 
+                match &self.source{
+                    Some(e) => e.to_string(),
+                    None => "None".to_string()
+                }
+            )
+        }
+    }
+    impl Error for ParseError{
+        fn source(&self) -> Option<&(dyn Error + 'static)> {
+            None
+        }
+
+       }
+}
+
+#[allow(dead_code)]
 pub mod viewport{
+
+    use std::iter::zip;
 
     use crate::vec3::{ray::Ray, vec3::Vec3};
     use image::Rgb;
     use indicatif::{ProgressBar, ProgressStyle};
     use rand::Rng;
-    use crate::objects::objects::{NO_HIT, Sphere, Object}; 
+    use json::JsonValue;
+    use crate::objects::objects::{NO_HIT, Sphere, Object};
+
+    use super::errors; 
 
     type Img = Vec<Vec<Rgb<f32>>>;
 
+    #[derive(Debug,Clone)]
     pub struct Viewport{
         #[allow(dead_code)]
         pub samples:usize,
@@ -34,12 +66,104 @@ pub mod viewport{
         pub msg: String
     }
     
+    #[derive(Debug, Clone)]
     pub struct Scene{
-        spheres: Vec<Sphere>
+        pub spheres: Vec<Sphere>
     }
+    
+    impl PartialEq for Scene{
+        fn eq(&self, other: &Self) -> bool {
+            for (i, o) in zip(self.spheres.to_owned(), other.spheres.to_owned()  ){
+                if i != o{
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    impl Into<JsonValue> for Scene{
+        fn into(self) -> JsonValue {
+            json::object! {
+                spheres:self.spheres
+            }
+        }
+    }
+    impl TryFrom<JsonValue> for Scene{
+        type Error = errors::ParseError;
+
+        fn try_from(value: JsonValue) -> Result<Self, Self::Error> {
+            let mut spheres: Vec<Sphere> = Vec::new();
+
+            if !value["spheres"].is_array() {return Err(Self::Error{source: None});}
+
+            for i in value["spheres"].members(){
+                let sphere: Result<Sphere, <Sphere as TryFrom<JsonValue>>::Error> = TryInto::try_into(i.to_owned());
+                match sphere {
+                    Ok(s) => spheres.push(s),
+                    Err(e) => return Err(e),
+                }
+            }
+
+
+            Ok(Scene { spheres: spheres })
+        }
+    }
+    
     fn gamma_correct(col: Vec3, gamma: f32) -> Vec3{
         Vec3 { x: col.x.powf(gamma), y: col.y.powf(gamma), z: col.z.powf(gamma) }
     }
+
+    pub async fn async_render(viewport: Viewport, ray_color: impl Fn(Ray, &Scene, usize)->Rgb<f32> + std::marker::Send + std::marker::Copy + 'static, scene: Scene) -> Img{
+        let mut img: Img = Vec::with_capacity(viewport.height as usize);
+        let mut tasks = Vec::with_capacity(viewport.height as usize);
+        let pb = ProgressBar::new(viewport.height);
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template(
+                    "{msg} {spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
+                )
+                .unwrap()
+                .progress_chars("#C-"),
+        );
+        pb.set_message(viewport.msg.to_owned());
+        let inv_g = 1.0 / viewport.gamma;
+
+        for j in 0..(viewport.height as usize){
+            tasks.push(
+                tokio::spawn(render_row(viewport.to_owned(), ray_color, scene.to_owned(), inv_g, j))
+            );
+        }
+        for t in tasks{
+            img.push(t.await.unwrap());
+            pb.inc(1);
+        }
+        pb.finish_with_message("Img ready");
+        return img;
+    }
+    async fn render_row(viewport: Viewport, ray_color: impl Fn(Ray, &Scene, usize)->Rgb<f32>, scene: Scene, inv_g: f32, j: usize) -> Vec<Rgb<f32>> {
+            
+        let mut row = Vec::new();
+        let mut rng = rand::thread_rng();
+
+        for i in 0..viewport.width {
+            let mut color = Vec3{x:0.0, y: 0.0, z:0.0};
+            for _ in 0..viewport.samples{
+                let random_point = Vec3::random_in_unit_disk();
+        
+                let r = Ray::new(
+                    viewport.origin  + (viewport.u * random_point.x  + viewport.v * random_point.y) * viewport.lens_radius,
+                    viewport.upper_left_corner +
+                    viewport.p_delta_u * (i as f32 + rng.gen::<f32>()) + viewport.p_delta_v * (j as f32 + rng.gen::<f32>()),
+                );
+                color += Vec3::from_rgb(ray_color(r, &scene, viewport.depth));
+            }
+            row.push(gamma_correct(color / viewport.samples as f32, inv_g).to_rgb());
+        }
+        
+        row
+    }
+
     impl Viewport{
         pub fn new(width:u64, aspect_ratio:f32, samples: usize, depth:usize, gamma:f32, vfov:Option<f32>, origin: Option<Vec3>, direction: Option<Vec3>, vup: Option<Vec3>, msg: Option<String>, lens_radius: Option<f32>)-> Self{
             
@@ -194,7 +318,10 @@ pub mod viewport{
             pb.finish_with_message("Img ready");
             return img;
         }
+        
     }
+    
+
     fn ray_color_d(r: Ray, scene: &Scene, depth:usize) -> Rgb<f32> {
         // eprintln!("D: {}", depth);
         if depth < 1{
@@ -238,7 +365,7 @@ pub mod viewport{
 
     #[cfg(test)]
     mod tests{
-        use super::*;
+        use super::{Scene, Vec3, Ray, Viewport, Rgb, Sphere, Object, NO_HIT};
         use crate::write_img::img_writer::write_img_f32;
 
         fn ray_color(r: Ray, scene: &Scene, _:usize) -> Rgb<f32> {
@@ -503,7 +630,7 @@ pub mod viewport{
     mod camera_tests{
         use super::*;
         use crate::write_img::img_writer::write_img_f32;
-        use crate::objects::objects::materials::{EMPTY_M, SCATTER_M, METALLIC_M, FUZZY3_M, GLASS_M, GLASSR_M};
+        use crate::objects::objects::materials::{SCATTER_M, METALLIC_M};
 
         const WIDTH: u64 = 400;
         const HEIGHT: u64 = 300;
@@ -553,6 +680,56 @@ pub mod viewport{
 
             write_img_f32(img, "camera_depth_of_field_test.png".to_string());
         }
+
+    }
+
+    #[cfg(test)]
+    mod json_tests{
+        use super::*;
+        use crate::objects::objects::materials::{SCATTER_M, METALLIC_M};
+
+        #[test]
+        fn serialize_test(){
+
+            let scene = Scene{spheres: vec!
+                [
+                    Sphere::new(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.6, 0.6, 0.6)), Some(SCATTER_M)),
+                    Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M)),
+                    Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(METALLIC_M)),
+                ]
+            };
+            let obj:JsonValue = scene.to_owned().into();
+            println!("{:#}", obj);
+            println!("{:#}", obj["spheres"]);
+
+            let json_s = match Scene::try_from(obj){
+                Ok(s) => s,
+                Err(e) => panic!("{}" ,e)
+            };
+            println!("Scene: {:?}", json_s);
+
+       }
+       #[test]
+       fn deserialize_test(){
+            let scene = Scene{spheres: vec!
+                [
+                    Sphere::new(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.6, 0.6, 0.6)), Some(SCATTER_M)),
+                    Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M)),
+                    Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(METALLIC_M)),
+                ]
+            };
+            let obj:JsonValue = scene.to_owned().into();
+            println!("{:#}", obj);
+            println!("{:#}", obj["spheres"]);
+
+            let json_s = match Scene::try_from(obj){
+                Ok(s) => s,
+                Err(e) => panic!("{}" ,e)
+            };
+            println!("Scene: {:?}", json_s);
+
+            assert_eq!(scene, json_s);
+       }
 
     }
 }

@@ -16,11 +16,7 @@ const Vec3 = ray.Vec3;
 const Sphere = object.Sphere;
 
 pub const Scene = struct {
-    spheres: std.ArrayList(Sphere),
-
-    pub fn deinit(self: *Scene) void {
-        self.spheres.deinit();
-    }
+    spheres: []Sphere, //std.ArrayList(Sphere),
 };
 fn gamma(vec: Vec3, inv_g: f32) Vec3 {
     return Vec3{ pow(f32, vec[0], inv_g), pow(f32, vec[1], inv_g), pow(f32, vec[2], inv_g) };

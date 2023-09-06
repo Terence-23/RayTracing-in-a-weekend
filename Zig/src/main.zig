@@ -9,6 +9,24 @@ const std = @import("std");
 const zig_col = zigimg.color;
 const rgb = zig_col.Rgb24;
 
+const my_json =
+    \\{
+    \\    "vals": {
+    \\        "testing": 1,
+    \\        "production": 42
+    \\    },
+    \\    "uptime": 9999
+    \\}
+;
+
+const Config = struct {
+    vals: struct {
+        testing: u8,
+        production: u8,
+    },
+    uptime: u64,
+};
+
 fn write_test() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
@@ -51,23 +69,41 @@ pub fn main() !void {
     // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
     std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
 
-    try write_test();
+    // try write_test();
 
-    try ray.viewport_test();
+    // try ray.viewport_test();
 
-    try object.sphere_test();
+    // try object.sphere_test();
 
-    try object.sphere_test_normal();
+    // try object.sphere_test_normal();
 
-    try viewport.sceneTest();
+    // try viewport.sceneTest();
 
-    try materials.diffuseTest();
+    // try materials.diffuseTest();
 
-    try materials.metalTest();
+    // try materials.metalTest();
 
-    try materials.glassTest();
+    // try materials.glassTest();
 
-    try viewport.cameraTest();
+    // try viewport.cameraTest();
 
     std.debug.print("Run `zig build test` to run the tests.\n", .{});
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
+    const Vec3 = @Vector(3, f32);
+
+    var spheres = try std.ArrayList(object.Sphere).initCapacity(gpa.allocator(), 4);
+    try spheres.append(object.Sphere{ .origin = Vec3{ 0.5, 0.0, -1.0 }, .radius = 0.5 });
+    try spheres.append(object.Sphere{ .origin = Vec3{ -0.5, 0.0, -1.0 }, .radius = 0.5 });
+    try spheres.append(object.Sphere{ .origin = Vec3{ 0.0, 0.2, -2.0 }, .radius = 1.0 });
+
+    var x = viewport.Scene{ .spheres = spheres.items };
+    defer spheres.deinit();
+    var string = std.ArrayList(u8).init(gpa.allocator());
+    try std.json.stringify(x, .{}, string.writer());
+
+    std.log.debug("JSON: {s}", .{string.items});
+    const scene = try std.json.parseFromSlice(viewport.Scene, gpa.allocator(), string.items, .{});
+    std.debug.print("Scene: {}", .{scene});
 }
