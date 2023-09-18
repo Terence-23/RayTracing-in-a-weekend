@@ -143,7 +143,7 @@ pub mod objects {
                         Self::refract(unit_direction, n, refraction_ratio)
                     };
 
-                    return Ray::new(h.point, direction);
+                    return Ray::new_with_time(h.point, direction, r.time);
 
                 }
                 // eprintln!("reflect");
@@ -160,22 +160,22 @@ pub mod objects {
         pub const GLASS_M: Material = Material{metallicness: 1.0, opacity: 1.0, ir:1.50};
         pub const GLASSR_M: Material = Material{metallicness: 1.0, opacity: 1.0, ir: 1.0/GLASS_M.ir};
         pub const EMPTY_M: Material = SCATTER_M;
-        fn empty(_hit: Hit, _:Ray) -> Ray{
-            Ray{origin:Vec3 { x: 0.0, y: 0.0, z: 0.0 }, direction:Vec3 { x: 0.0, y: 0.0, z: 0.0 }}
+        fn empty(_hit: Hit, r:Ray) -> Ray{
+            Ray{origin:Vec3 { x: 0.0, y: 0.0, z: 0.0 }, direction:Vec3 { x: 0.0, y: 0.0, z: 0.0 }, time: r.time}
         }
-        fn diffuse(hit :Hit, _: Ray) -> Ray{
+        fn diffuse(hit :Hit, r: Ray) -> Ray{
             // println!("diff");
             let target = hit.normal +  Vec3::random_unit_vec();
             if target.close_to_zero(){
-                return Ray{origin: hit.point, direction: hit.normal};
+                return Ray{origin: hit.point, direction: hit.normal, time:r.time};
             }
-            return Ray{origin: hit.point, direction: target};
+            return Ray{origin: hit.point, direction: target, time: r.time};
         }
         fn metallic(hit :Hit, r: Ray) -> Ray{
-            Ray{origin: hit.point, direction: r.direction.unit().reflect(hit.normal)}
+            Ray{origin: hit.point, direction: r.direction.unit().reflect(hit.normal), time:r.time}
         }
         fn metal_fuzzy03(hit :Hit, r: Ray) -> Ray{
-            Ray{origin: hit.point, direction: (r.direction.unit().reflect(hit.normal) + Vec3::random_unit_vec() * 0.3).unit()}
+            Ray{origin: hit.point, direction: (r.direction.unit().reflect(hit.normal) + Vec3::random_unit_vec() * 0.3).unit(), time:r.time}
         }
         
     }
@@ -186,6 +186,7 @@ pub mod objects {
         pub radius: f32,
         pub col_mod: Vec3,
         pub mat: Material,
+        pub velocity: Vec3,
         
     }
 
@@ -205,6 +206,7 @@ pub mod objects {
                 radius: self.radius,
                 col_mod: self.col_mod,
                 material: self.mat,
+                velocity: self.velocity
             }
         }
     }
@@ -229,7 +231,11 @@ pub mod objects {
                     mat: match Material::try_from(value["material"].to_owned()){
                         Ok(v) => v,
                         Err(e) => return Err(e)
-                    } 
+                    } ,
+                    velocity:match Vec3::try_from(value["velocity"].to_owned()){
+                        Ok(x) => x,
+                        Err(e) => return Err(e)
+                    }
                 }
             )
         }
@@ -243,7 +249,8 @@ pub mod objects {
             return b * b - (4.0 * a * c) > 0.0;
         }
         fn collision_normal(&self, r: Ray, mint:f32, maxt:f32) -> Hit {
-            let oc = r.origin - self.origin;
+            let origin = self.origin + self.velocity * r.time;
+            let oc = r.origin - origin;
             let a = r.direction.dot(r.direction);
             let b = oc.dot(r.direction);
             let c = oc.dot(oc) - self.radius * self.radius;
@@ -278,13 +285,28 @@ pub mod objects {
                     Some(n) => n,
                     None => Material{metallicness: 0.0, opacity: 0.0, ir: 1.0} 
                 },
+                velocity: Vec3 { x: 0.0, y: 0.0, z: 0.0 }
+            }
+        }
+        pub fn new_moving(origin:Vec3, r: f32, col_mod: Option<Vec3>, mat: Option<Material>, velocity:Vec3) ->Sphere{
+            Sphere {
+                origin: origin,
+                radius: r,
+                col_mod: match col_mod{
+                    Some(n) => n,
+                    None => Vec3::new(1.0, 1.0, 1.0) 
+                },
+                mat: match mat{
+                    Some(n) => n,
+                    None => Material{metallicness: 0.0, opacity: 0.0, ir: 1.0} 
+                },
+                velocity
             }
         }
 
         
     }
 
-    
 
     #[cfg(test)]
     mod tests{
@@ -303,6 +325,7 @@ pub mod objects {
                 radius: -0.5,
                 col_mod: Vec3::new(0.0,0.0,0.0),
                 mat: Material{metallicness: 0.0, opacity: 0.0, ir: 1.0},
+                velocity: Vec3::new(0.0,0.0,0.0),
             };
             if sphere.collide(r) {
                 return Rgb([1.0, 0.0, 0.0]);

@@ -38,7 +38,7 @@ pub mod viewport{
 
     use super::errors; 
 
-    type Img = Vec<Vec<Rgb<f32>>>;
+    pub type Img = Vec<Vec<Rgb<f32>>>;
 
     #[derive(Debug,Clone)]
     pub struct Viewport{
@@ -63,7 +63,12 @@ pub mod viewport{
 
         pub depth: usize,
         pub gamma:f32,
-        pub msg: String
+        pub msg: String,
+        pub shutter_speed: f32,
+        pub fps: f32,
+        pub frame: usize,
+        pub number_of_frames: usize,
+        pub start_frame: usize
     }
     
     #[derive(Debug, Clone)]
@@ -141,20 +146,32 @@ pub mod viewport{
         pb.finish_with_message("Img ready");
         return img;
     }
+    pub async fn render_multi(viewport: Viewport, ray_color: impl Fn(Ray, &Scene, usize)->Rgb<f32> + std::marker::Send + std::marker::Copy + 'static, scene: Scene) -> Vec<Img>{
+        let mut viewport = viewport.clone();
+        let mut video = Vec::new();
+        for i in viewport.start_frame..viewport.number_of_frames+viewport.start_frame{
+            viewport.frame = i;
+            viewport.msg = format!("Rendering, num: {}", i);
+            video.push(async_render(viewport.to_owned(), ray_color, scene.to_owned()).await);    
+        }
+        return video;
+    }
     async fn render_row(viewport: Viewport, ray_color: impl Fn(Ray, &Scene, usize)->Rgb<f32>, scene: Scene, inv_g: f32, j: usize) -> Vec<Rgb<f32>> {
             
         let mut row = Vec::new();
         let mut rng = rand::thread_rng();
+        let time = viewport.frame as f32 / viewport.fps;
 
         for i in 0..viewport.width {
             let mut color = Vec3{x:0.0, y: 0.0, z:0.0};
             for _ in 0..viewport.samples{
                 let random_point = Vec3::random_in_unit_disk();
         
-                let r = Ray::new(
+                let r = Ray::new_with_time(
                     viewport.origin  + (viewport.u * random_point.x  + viewport.v * random_point.y) * viewport.lens_radius,
                     viewport.upper_left_corner +
                     viewport.p_delta_u * (i as f32 + rng.gen::<f32>()) + viewport.p_delta_v * (j as f32 + rng.gen::<f32>()),
+                    time + viewport.shutter_speed * rng.gen::<f32>()
                 );
                 color += Vec3::from_rgb(ray_color(r, &scene, viewport.depth));
             }
@@ -236,7 +253,12 @@ pub mod viewport{
                 msg: match msg{
                     Some(n) => n,
                     None => "".to_string()
-                }
+                },
+                shutter_speed: 0.0,
+                fps: 30.0,
+                frame: 0,
+                number_of_frames:1,
+                start_frame: 0,
             }
         }
         pub fn new_from_res(width:u64, height:u64, samples:usize, depth:usize, gamma: f32, vfov:Option<f32>, origin: Option<Vec3>, direction: Option<Vec3>, vup: Option<Vec3>, msg: Option<String>, lens_radius: Option<f32>) -> Self{
