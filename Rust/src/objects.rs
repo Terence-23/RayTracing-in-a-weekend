@@ -1,10 +1,11 @@
 pub mod objects {
 
-    use std::{cmp::Ordering, fmt, fmt::Debug};
+    use std::{cmp::Ordering, fmt, fmt::Debug, ops::Add};
 
     use crate::vec3::{ray::Ray, vec3::Vec3};
     use self::materials::Material;
     use json::JsonValue;
+    use rand::{random, distributions::{Distribution, Standard}, Rng};
     
 
     #[derive(Clone, Copy)]
@@ -38,6 +39,22 @@ pub mod objects {
         }
     }
 
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    enum Axis{
+        X,
+        Y,
+        Z
+    }
+    impl Distribution<Axis> for Standard {
+        fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Axis {
+            // match rng.gen_range(0, 3) { // rand 0.5, 0.6, 0.7
+            match rng.gen_range(0..=2) { // rand 0.8
+                0 => Axis::X,
+                1 => Axis::Y,
+                _ => Axis::Z,
+            }
+        }
+    }
     
     pub const NO_HIT:Hit = Hit{
         t: -1.0, 
@@ -46,6 +63,49 @@ pub mod objects {
         col_mod:Vec3 { x: 1.0, y: 1.0, z: 1.0 }, 
         mat: Material{metallicness: 0.0, opacity: 0.0, ir: 1.0}
     };
+    #[derive(Debug, PartialEq, Clone, Copy)]
+    pub struct Interval{
+        min:f32,
+        max:f32
+    }
+    fn minf(x1: f32, x2:f32) -> f32{
+        return if x1 <= x2 { x1 }else{ x2 }
+    }
+    fn maxf(x1: f32, x2:f32) -> f32{
+        return if x1 >= x2 { x1 }else{ x2 }
+    }
+    impl Add for Interval{
+        type Output = Self;
+
+        fn add(self, rhs: Self) -> Self::Output {
+            Interval{
+                min: minf(self.min, rhs.min), 
+                max: maxf(self.max, rhs.max)
+            }
+        }
+    }
+    impl Interval {
+        pub fn new(x1: f32, x2: f32) -> Self { Self {min: minf(x1, x2), max: maxf(x1, x2) } }
+    
+        /// Returns the intersection of the function `Y = aX + b` with `self` <br>
+        /// Returns an `Interval` containing two points of intersection with lines `Y = self.min` and `Y = self.max`. <br> If `a == 0` returns `None` if `b` is outside `self` or `Interval{min: f32::NEG_INFINITY, max: f32::INFINITY}` if `b` is inside
+        pub fn intersect(&self, a: f32, b: f32) -> Option<Interval>{
+            
+            if a == 0.0 {
+                return if self.min < b && b < self.max{
+                    Some(Interval{min: f32::NEG_INFINITY, max: f32::INFINITY})
+                } else{
+                    None
+                }
+            }
+            let inv_a = 1.0/a;
+            let x1 = (self.min - b) * inv_a;
+            let x2 = (self.max - b) * inv_a;
+            Some(Interval::new(x1 , x2))
+        }
+    }
+    
+
 
     pub trait Object {
         fn collide(&self, r: Ray) -> bool;
@@ -190,6 +250,124 @@ pub mod objects {
         
     }
 
+    #[derive(Debug, Clone)]
+    pub struct AABB {
+        x: Interval,
+        y: Interval,
+        z: Interval,
+        spheres: Vec<Sphere>,
+        aabbs: Vec<AABB> 
+    }
+    #[allow(dead_code)]
+    impl AABB{
+        pub fn new(mut spheres: Vec<Sphere>, ) -> Self{
+            if spheres.len() == 1{
+                return AABB{
+                    spheres: spheres.to_owned(),
+                    x: Interval::new(spheres[0].origin.x - spheres[0].radius, spheres[0].origin.x + spheres[0].radius),
+                    y: Interval::new(spheres[0].origin.y - spheres[0].radius, spheres[0].origin.y + spheres[0].radius),
+                    z: Interval::new(spheres[0].origin.z - spheres[0].radius, spheres[0].origin.z + spheres[0].radius),
+                    aabbs: vec![],
+                }
+            }
+            let axis = random::<Axis>();
+            match axis {
+                Axis::X => spheres.sort_unstable_by(|s, oth| (s.origin.x + s.radius).total_cmp(&(oth.origin.x + oth.radius))),
+                Axis::Y => spheres.sort_unstable_by(|s, oth| (s.origin.y + s.radius).total_cmp(&(oth.origin.y + oth.radius))),
+                Axis::Z => spheres.sort_unstable_by(|s, oth| (s.origin.z + s.radius).total_cmp(&(oth.origin.z + oth.radius)))
+            }
+            return Self::new_from_sorted(spheres)
+        }
+        fn new_from_sorted(spheres: Vec<Sphere>) -> Self{
+            let len = spheres.len() / 2;
+            let spheres1 = spheres[0..len].to_vec();
+            let spheres2 = spheres[len..].to_vec();
+            
+            let aabb1 = Self::new(spheres1);
+            let aabb2 = Self::new(spheres2);
+
+            return AABB { 
+                x: aabb1.x + aabb2.x, 
+                y: aabb1.y + aabb2.y, 
+                z: aabb1.z + aabb2.z, 
+                spheres: spheres,
+                aabbs: vec![aabb1, aabb2] }
+        }
+        pub fn volume(&self) -> f32{
+            (self.x.max - self.x.min) * (self.y.max - self.y.min) * (self.z.max - self.z.min)
+        }
+    }
+
+    impl Object for AABB{
+        fn collide(&self, r: Ray) -> bool {
+            let x_hit = match self.x.intersect(r.direction.x, r.origin.x){
+                Some(n) => n,
+                None => return false
+            };
+            let y_hit = match self.y.intersect(r.direction.y, r.origin.y){
+                Some(n) => n,
+                None => return false
+            };
+            let z_hit = match self.z.intersect(r.direction.z, r.origin.z){
+                Some(n) => n,
+                None => return false
+            };
+            let min = maxf(maxf(x_hit.min, y_hit.min), z_hit.min);
+            let max = minf(minf(x_hit.max, y_hit.max), z_hit.max);
+            min < max
+        }
+
+        fn collision_normal(&self, r: Ray, mint:f32, maxt:f32) -> Hit {
+            let x_hit = match self.x.intersect(r.direction.x, r.origin.x){
+                Some(n) => n,
+                None => return NO_HIT
+            };
+            let y_hit = match self.y.intersect(r.direction.y, r.origin.y){
+                Some(n) => n,
+                None => return NO_HIT
+            };
+            let z_hit = match self.z.intersect(r.direction.z, r.origin.z){
+                Some(n) => n,
+                None => return NO_HIT
+            };
+            let min = maxf(maxf(x_hit.min, y_hit.min), maxf(z_hit.min, mint));
+            let max = minf(minf(x_hit.max, y_hit.max), minf(z_hit.max, maxt));
+            
+            if min > max{
+                return NO_HIT;
+            }
+            let mut min_hit = NO_HIT;
+            if self.aabbs.len() > 0{
+                for i in self.aabbs[..]
+                    .into_iter()
+                    .map(|aabb| aabb.collision_normal(r, min, max))
+                {
+                    if i == NO_HIT {
+                        continue;
+                    }
+                    if min_hit == NO_HIT || min_hit > i {
+                        min_hit = i;
+                    }
+                }
+
+            }
+            else{
+                for i in self.spheres[..]
+                    .into_iter()
+                    .map(|sp| sp.collision_normal(r, min, max))
+                {
+                    if i == NO_HIT {
+                        continue;
+                    }
+                    if min_hit == NO_HIT || min_hit > i {
+                        min_hit = i;
+                    }
+                }
+            }
+
+            return min_hit;
+        }
+    }
     // impl Debug for Sphere<'_>{
     //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     //         f.debug_struct("Sphere")

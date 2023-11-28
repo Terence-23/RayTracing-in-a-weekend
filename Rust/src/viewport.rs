@@ -29,7 +29,7 @@ pub mod viewport{
 
     use std::iter::zip;
 
-    use crate::vec3::{ray::Ray, vec3::Vec3};
+    use crate::{vec3::{ray::Ray, vec3::Vec3}, objects::objects::AABB};
     use image::Rgb;
     use indicatif::{ProgressBar, ProgressStyle};
     use rand::Rng;
@@ -73,7 +73,16 @@ pub mod viewport{
     
     #[derive(Debug, Clone)]
     pub struct Scene{
-        pub spheres: Vec<Sphere>
+        pub spheres: Vec<Sphere>,
+        pub aabb: AABB
+    }
+    impl Scene {
+        pub fn new(spheres: Vec<Sphere>) -> Scene {
+            Scene { 
+                spheres: spheres.clone(),
+                aabb: AABB::new(spheres) 
+            }
+        }
     }
     
     impl PartialEq for Scene{
@@ -111,7 +120,7 @@ pub mod viewport{
             }
 
 
-            Ok(Scene { spheres: spheres })
+            Ok(Scene::new(spheres))
         }
     }
     
@@ -428,7 +437,7 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,},1.0, None, None),
                 Sphere::new(Vec3 {x: 0.0, y: 0.0, z: 0.0,},1.0, None, None),
             };
-            let scene = Scene{spheres: spheres};
+            let scene = Scene::new(spheres);
             let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0, None, None, None, None, Some("Viewport object test".to_string()), None);
 
             let img = viewport.render(&ray_color, scene);
@@ -451,7 +460,7 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M)),
                 Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(SCATTER_M)),
             };
-            let scene = Scene{spheres: spheres};
+            let scene = Scene::new(spheres);
             let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0, None, None, None, None, Some("Diffuse test".to_string()), None);
 
             let img = viewport.render(&ray_color_d, scene);
@@ -468,7 +477,7 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(SCATTER_M)),
                 Sphere::new(Vec3 {x: 0.0, y: -1000.9, z: -5.0,}, 1000.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(EMPTY_M)),
             };
-            let scene = Scene{spheres: spheres};
+            let scene = Scene::new(spheres);
             let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0, None, None, None, None, Some("Metallic test".to_string()), None);
 
             let img = viewport.render(&ray_color_d, scene);
@@ -485,7 +494,7 @@ pub mod viewport{
                 // Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(SCATTER_M)),
                 Sphere::new(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(EMPTY_M)),
             };
-            let scene = Scene{spheres: spheres};
+            let scene = Scene::new(spheres);
             let viewport = Viewport::new_from_res(300, 200, samples, 10, 2.0, None, None, None, None, Some("Control for dielectric test".to_string()), None);
 
             let img = viewport.render(&ray_color_d, scene);
@@ -503,7 +512,7 @@ pub mod viewport{
                 // Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(SCATTER_M)),
                 Sphere::new(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(EMPTY_M)),
             };
-            let scene = Scene{spheres: spheres};
+            let scene = Scene::new(spheres);
             let viewport = Viewport::new_from_res(300, 200, samples, 10, 2.0, None, None, None, None, Some("Dielectric test".to_string()), None);
 
             let img = viewport.render(&ray_color_d, scene);
@@ -573,7 +582,7 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(METALLIC_M)),
                 Sphere::new(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(EMPTY_M)),
             };
-            let scene = Scene{spheres: spheres};
+            let scene = Scene::new(spheres);
             let viewport = Viewport::new_from_res(WIDTH, HEIGHT, samples, 10, 2.0, None, None, None, None, Some("Control for dielectric test".to_string()), None);
 
             let img = viewport.render_no_rand(&ray_color, scene);
@@ -587,7 +596,7 @@ pub mod viewport{
                 Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(GLASS_M)),
                 Sphere::new(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(1.0, 1.0, 1.0)), Some(EMPTY_M)),
             };
-            let scene = Scene{spheres: spheres};
+            let scene = Scene::new(spheres);
             let viewport = Viewport::new_from_res(WIDTH, HEIGHT, samples, 10, 2.0, None, None, None, None, Some("Dielectric test".to_string()), None);
 
             let img = viewport.render_no_rand(&ray_color, scene);
@@ -661,13 +670,13 @@ pub mod viewport{
         const GAMMA: f32 = 2.0;
 
         fn scene() -> Scene{
-            Scene{spheres: vec!
+            Scene::new(vec!
                 [
                     Sphere::new(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.6, 0.6, 0.6)), Some(SCATTER_M)),
                     Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M)),
                     Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(METALLIC_M)),
                 ]
-            }
+            )
         }
 
         #[test]
@@ -713,13 +722,13 @@ pub mod viewport{
         #[test]
         fn serialize_test(){
 
-            let scene = Scene{spheres: vec!
+            let scene = Scene::new(vec!
                 [
                     Sphere::new(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.6, 0.6, 0.6)), Some(SCATTER_M)),
                     Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M)),
                     Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(METALLIC_M)),
                 ]
-            };
+            );
             let obj:JsonValue = scene.to_owned().into();
             println!("{:#}", obj);
             println!("{:#}", obj["spheres"]);
@@ -733,13 +742,13 @@ pub mod viewport{
        }
        #[test]
        fn deserialize_test(){
-            let scene = Scene{spheres: vec!
+            let scene = Scene::new(vec!
                 [
                     Sphere::new(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.6, 0.6, 0.6)), Some(SCATTER_M)),
                     Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M)),
                     Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(METALLIC_M)),
                 ]
-            };
+            );
             let obj:JsonValue = scene.to_owned().into();
             println!("{:#}", obj);
             println!("{:#}", obj["spheres"]);

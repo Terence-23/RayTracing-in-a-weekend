@@ -19,21 +19,22 @@ fn ray_color_d(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
     let mint = 0.001;
     let maxt = 1000.0;
 
-    let hit = {
-        let mut min_hit = scene.spheres[0].collision_normal(r, mint, maxt);
-        for i in scene.spheres[..]
-            .into_iter()
-            .map(|sp| sp.collision_normal(r, mint, maxt))
-        {
-            if i == NO_HIT {
-                continue;
-            }
-            if min_hit == NO_HIT || min_hit > i {
-                min_hit = i;
-            }
-        }
-        min_hit
-    };
+    // let hit = {
+    //     let mut min_hit = scene.spheres[0].collision_normal(r, mint, maxt);
+    //     for i in scene.spheres[..]
+    //         .into_iter()
+    //         .map(|sp| sp.collision_normal(r, mint, maxt))
+    //     {
+    //         if i == NO_HIT {
+    //             continue;
+    //         }
+    //         if min_hit == NO_HIT || min_hit > i {
+    //             min_hit = i;
+    //         }
+    //     }
+    //     min_hit
+    // };
+    let hit = scene.aabb.collision_normal(r, mint, maxt);
 
     if hit != NO_HIT {
         // eprintln!("Hit: {:?}", hit );
@@ -56,7 +57,7 @@ fn ray_color_d(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
     return Rgb([(1.0 - t) + t * 0.5, (1 as f32 - t) + t * 0.7, 1.0]); //(1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0);
 }
 
-
+#[allow(unused_imports)]
 use std::{time::Instant, process::Command};
 
 fn test_run(f_name:String, viewport: Viewport, ray_color: impl Fn(Ray, &Scene, usize) -> Rgb<f32> + std::marker::Send+ std::marker::Copy + 'static, scene: &Scene) -> Vec<Img>{
@@ -157,7 +158,7 @@ fn main() {
             Some(EMPTY_M),
         ),
     ];
-    let _scene = Scene { spheres: spheres };
+    let _scene = Scene::new(spheres);
     let mut viewport = Viewport::new_from_res(
 320,
         180,
@@ -182,32 +183,32 @@ fn main() {
         Sphere::new_moving(Vec3 { x: 0.0, y: 1.0, z: -0.9 }, 0.5, Some(Vec3::new(1.0, 0.0, 1.0)), Some(SCATTER_M), Vec3::new(0.0, 0.0, 0.0)),
     ];
 
-    let ltr_scene = Scene{spheres: ltr_spheres};
+    let ltr_scene = Scene::new(ltr_spheres);
 
     viewport.fps = 15.0;
-    viewport.number_of_frames = 30; //20;
+    viewport.number_of_frames = 1; //20;
     viewport.shutter_speed = 1.0/20.0;
-    let video = test_run( "First frame.png".to_string(), viewport, ray_color_d, &ltr_scene);
+    let _video = test_run( "First frame.png".to_string(), viewport, ray_color_d, &ltr_scene);
     
-    Command::new("mkdir").arg("-p").arg("/tmp/video").spawn().expect("Failed to execute mkdir");
-    for (i, img) in video.iter().enumerate(){
-        write_img_f32(img.to_vec(), format!("/tmp/video/img{:0>5}.png", i))
-    }
-    
-    match Command::new("rm").arg("video.mp4").spawn(){
-        Ok(_) => println!("Removed video.mp4"),
-        Err(e) => println!("Error: {}", e)
-    };
-    let mut command = Command::new("ffmpeg");
-    command.arg("-framerate").arg("10")
-    // .arg("-pattern_type").arg("glob")
-    .arg("-r").arg("5")
-    .arg("video.mp4");
-    command.arg("-i").arg("/tmp/video/img%05d.png");
-    // for i in in_files{
-    //     command.arg("-i").arg(i);
+    // Command::new("mkdir").arg("-p").arg("/tmp/video").spawn().expect("Failed to execute mkdir");
+    // for (i, img) in video.iter().enumerate(){
+    //     write_img_f32(img.to_vec(), format!("/tmp/video/img{:0>5}.png", i))
     // }
-    println!("Command: {:?}", command);
-    command.spawn().expect("Failed to execute ffmpeg");
+    
+    // match Command::new("rm").arg("video.mp4").spawn(){
+    //     Ok(_) => println!("Removed video.mp4"),
+    //     Err(e) => println!("Error: {}", e)
+    // };
+    // let mut command = Command::new("ffmpeg");
+    // command.arg("-framerate").arg("10")
+    // // .arg("-pattern_type").arg("glob")
+    // .arg("-r").arg("5")
+    // .arg("video.mp4");
+    // command.arg("-i").arg("/tmp/video/img%05d.png");
+    // // for i in in_files{
+    // //     command.arg("-i").arg(i);
+    // // }
+    // println!("Command: {:?}", command);
+    // command.spawn().expect("Failed to execute ffmpeg");
 
 }
