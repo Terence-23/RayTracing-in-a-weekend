@@ -178,6 +178,9 @@ impl PartialEq for Vec3 {
         pub fn from_rgb(col: Rgb<f32>) -> Vec3 {
             Vec3{x:col.0[0], y:col.0[1], z:col.0[2]}
         }
+        pub fn from_rgb_ref(col: &Rgb<f32>) ->Vec3{
+            Vec3{x:col.0[0], y:col.0[1], z:col.0[2]}
+        }
         pub fn random(min: f32, max:f32) ->Vec3{
             Vec3 { x: random::<f32>() * (max - min) + min, y: random::<f32>() * (max - min) + min, z: random::<f32>() * (max - min) + min }
         }
@@ -296,7 +299,7 @@ pub mod ray {
             }
             pb.finish_with_message("Writing to disk");
 
-            write_img_f32(img, "viewport_test.png".to_string());
+            write_img_f32(img, "out/viewport_test.png".to_string());
         }
     }
 

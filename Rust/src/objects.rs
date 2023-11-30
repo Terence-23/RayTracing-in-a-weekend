@@ -2,7 +2,7 @@ pub mod objects {
 
     use std::{cmp::Ordering, fmt, fmt::Debug, ops::Add};
 
-    use crate::vec3::{ray::Ray, vec3::Vec3};
+    use crate::{vec3::{ray::Ray, vec3::Vec3}, texture::texture::{ImageTexture, Texture}};
     use self::materials::Material;
     use json::JsonValue;
     use rand::{random, distributions::{Distribution, Standard}, Rng};
@@ -61,7 +61,7 @@ pub mod objects {
         normal: Vec3{x:0.0, y:0.0, z:0.0}, 
         point: Vec3{x:0.0, y:0.0, z:0.0}, 
         col_mod:Vec3 { x: 1.0, y: 1.0, z: 1.0 }, 
-        mat: Material{metallicness: 0.0, opacity: 0.0, ir: 1.0}
+        mat: Material{metallicness: 0.0, opacity: 0.0, ir: 1.0},
     };
     #[derive(Debug, PartialEq, Clone, Copy)]
     pub struct Interval{
@@ -105,8 +105,6 @@ pub mod objects {
         }
     }
     
-
-
     pub trait Object {
         fn collide(&self, r: Ray) -> bool;
 
@@ -240,15 +238,27 @@ pub mod objects {
         
     }
 
-    #[derive(Debug, PartialEq, Clone)]
+    #[derive(Clone)]
     pub struct Sphere {
         pub origin: Vec3,
         pub radius: f32,
         pub col_mod: Vec3,
         pub mat: Material,
         pub velocity: Vec3,
-        
+        pub texture: ImageTexture,
     }
+
+impl PartialEq for Sphere {
+    fn eq(&self, other: &Self) -> bool {
+        self.origin == other.origin && self.radius == other.radius && self.col_mod == other.col_mod && self.mat == other.mat && self.velocity == other.velocity
+    }
+}
+
+impl Debug for Sphere {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Sphere").field("origin", &self.origin).field("radius", &self.radius).field("col_mod", &self.col_mod).field("mat", &self.mat).field("velocity", &self.velocity).finish()
+    }
+}
 
     #[derive(Debug, Clone)]
     pub struct AABB {
@@ -384,7 +394,8 @@ pub mod objects {
                 radius: self.radius,
                 col_mod: self.col_mod,
                 material: self.mat,
-                velocity: self.velocity
+                velocity: self.velocity,
+                texture: self.texture,
             }
         }
     }
@@ -413,6 +424,10 @@ pub mod objects {
                     velocity:match Vec3::try_from(value["velocity"].to_owned()){
                         Ok(x) => x,
                         Err(e) => return Err(e)
+                    },
+                    texture: match ImageTexture::try_from(value["texture"].to_owned()) {
+                        Ok(t) => t,
+                        Err(e) => {println!("No texture"); return Err(e)}
                     }
                 }
             )
@@ -445,12 +460,30 @@ pub mod objects {
                 return NO_HIT;
             }
             // println!("mint: {}", mint);
-            assert_ne!(x, 0.0);
-            return Hit{t:x, normal:(r.at(x) - self.origin).unit(), point: r.at(x), mat: self.mat, col_mod:self.col_mod};
+            debug_assert_ne!(x, 0.0);
+            let point = (r.at(x) - self.origin).unit();
+
+            let u: f32 = (f32::atan2(-point.z, point.x) + std::f32::consts::PI) * std::f32::consts::FRAC_1_PI * 0.5;
+            let v: f32 = 1.0 - (std::f32::consts::FRAC_1_PI * f32::acos( -point.y));
+
+            debug_assert!(u <= 1.0, "U too big");
+            debug_assert!(v <= 1.0  && v >= 0.0, "V too big");
+
+            let tex_x = (u * (self.texture.row -  1) as f32).floor() as usize;
+            let tex_y = (v  * (self.texture.col - 1) as f32).floor() as usize;
+
+            Hit{
+                t:x, 
+                normal:(r.at(x) - self.origin).unit(), 
+                point: point, 
+                mat: self.mat, 
+                col_mod: self.texture.color_at(tex_x, tex_y) * self.col_mod
+            }
         }
     }
     #[allow(dead_code)]
     impl Sphere{
+        
         pub fn new(origin:Vec3, r: f32, col_mod: Option<Vec3>, mat: Option<Material>) ->Sphere{
             Sphere {
                 origin: origin,
@@ -463,7 +496,14 @@ pub mod objects {
                     Some(n) => n,
                     None => Material{metallicness: 0.0, opacity: 0.0, ir: 1.0} 
                 },
-                velocity: Vec3 { x: 0.0, y: 0.0, z: 0.0 }
+                velocity: Vec3 { x: 0.0, y: 0.0, z: 0.0 },
+                texture: 
+                    ImageTexture::from_color(
+                        match col_mod{
+                            Some(n) => n.to_rgb(),
+                            None => Vec3::new(1.0, 1.0, 1.0).to_rgb() 
+                        }
+                    ),
             }
         }
         pub fn new_moving(origin:Vec3, r: f32, col_mod: Option<Vec3>, mat: Option<Material>, velocity:Vec3) ->Sphere{
@@ -478,10 +518,57 @@ pub mod objects {
                     Some(n) => n,
                     None => Material{metallicness: 0.0, opacity: 0.0, ir: 1.0} 
                 },
-                velocity
+                velocity,
+                texture: 
+                    ImageTexture::from_color(
+                        match col_mod{
+                            Some(n) => n.to_rgb(),
+                            None => Vec3::new(1.0, 1.0, 1.0).to_rgb() 
+                        }
+                    ),
             }
         }
+        pub fn new_with_texture(origin:Vec3, r: f32, col_mod: Option<Vec3>, mat: Option<Material>, tex: ImageTexture) -> Sphere{
+            Sphere {
+                origin: origin,
+                radius: r,
+                col_mod: match col_mod{
+                    Some(n) => n,
+                    None => Vec3::new(1.0, 1.0, 1.0) 
+                },
+                mat: match mat{
+                    Some(n) => n,
+                    None => Material{metallicness: 0.0, opacity: 0.0, ir: 1.0} 
+                },
+                velocity: Vec3 { x: 0.0, y: 0.0, z: 0.0 },
+                texture: tex
+            }
+        }
+        pub fn new_moving_with_texture(
+            origin:Vec3, 
+            r: f32, 
+            col_mod: Option<Vec3>, 
+            mat: Option<Material>, 
+            velocity:Vec3, 
+            tex: ImageTexture
+        ) -> Sphere{
 
+            Sphere {
+                origin: origin,
+                radius: r,
+                col_mod: match col_mod{
+                    Some(n) => n,
+                    None => Vec3::new(1.0, 1.0, 1.0) 
+                },
+                mat: match mat{
+                    Some(n) => n,
+                    None => Material{metallicness: 0.0, opacity: 0.0, ir: 1.0} 
+                },
+                velocity: velocity,
+                texture: tex
+            }
+
+        }
         
     }
 
@@ -504,6 +591,10 @@ pub mod objects {
                 col_mod: Vec3::new(0.0,0.0,0.0),
                 mat: Material{metallicness: 0.0, opacity: 0.0, ir: 1.0},
                 velocity: Vec3::new(0.0,0.0,0.0),
+                texture: 
+                    ImageTexture::from_color(
+                        Vec3{z: 0.0, x: 0.0, y:0.0}.to_rgb()
+                    ),
             };
             if sphere.collide(r) {
                 return Rgb([1.0, 0.0, 0.0]);
@@ -571,7 +662,7 @@ pub mod objects {
             }
             pb.finish_with_message("Writing to disk");
 
-            write_img_f32(img, "sphere_test.png".to_string());
+            write_img_f32(img, "out/sphere_test.png".to_string());
         }
         #[test]
         pub fn sphere_test_normal(){
@@ -618,7 +709,7 @@ pub mod objects {
         }
         pb.finish_with_message("Writing to disk");
 
-        write_img_f32(img, "normal_test.png".to_string());
+        write_img_f32(img, "out/normal_test.png".to_string());
     }
     }
 }

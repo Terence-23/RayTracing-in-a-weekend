@@ -115,7 +115,7 @@ pub mod viewport{
                 let sphere: Result<Sphere, <Sphere as TryFrom<JsonValue>>::Error> = TryInto::try_into(i.to_owned());
                 match sphere {
                     Ok(s) => spheres.push(s),
-                    Err(e) => return Err(e),
+                    Err(e) => {eprintln!("Sphere error: {i}, {e}");return Err(e)},
                 }
             }
 
@@ -442,7 +442,7 @@ pub mod viewport{
 
             let img = viewport.render(&ray_color, scene);
 
-            write_img_f32(img, "viewport_object.png".to_string());
+            write_img_f32(img, "out/viewport_object.png".to_string());
 
         }
     
@@ -465,7 +465,7 @@ pub mod viewport{
 
             let img = viewport.render(&ray_color_d, scene);
 
-            write_img_f32(img, "diffuse_test.png".to_string());
+            write_img_f32(img, "out/diffuse_test.png".to_string());
 
         }
         #[test]
@@ -482,7 +482,7 @@ pub mod viewport{
 
             let img = viewport.render(&ray_color_d, scene);
 
-            write_img_f32(img, "metal_test.png".to_string());
+            write_img_f32(img, "out/metal_test.png".to_string());
 
         }
         #[test]
@@ -499,7 +499,7 @@ pub mod viewport{
 
             let img = viewport.render(&ray_color_d, scene);
 
-            write_img_f32(img, "glass_test_c.png".to_string());
+            write_img_f32(img, "out/glass_test_c.png".to_string());
 
         }
         #[test]
@@ -517,7 +517,7 @@ pub mod viewport{
 
             let img = viewport.render(&ray_color_d, scene);
 
-            write_img_f32(img, "glass_test.png".to_string());
+            write_img_f32(img, "out/glass_test.png".to_string());
 
         }
     }
@@ -587,7 +587,7 @@ pub mod viewport{
 
             let img = viewport.render_no_rand(&ray_color, scene);
 
-            write_img_f32(img, "s_glass_test_c.png".to_string());
+            write_img_f32(img, "out/s_glass_test_c.png".to_string());
 
         }
         fn glass_test(){
@@ -601,7 +601,7 @@ pub mod viewport{
 
             let img = viewport.render_no_rand(&ray_color, scene);
 
-            write_img_f32(img, "s_glass_test.png".to_string());
+            write_img_f32(img, "out/s_glass_test.png".to_string());
             
         }
         
@@ -656,7 +656,6 @@ pub mod viewport{
         }
 
     }
-
     #[cfg(test)]
     mod camera_tests{
         use super::*;
@@ -685,7 +684,7 @@ pub mod viewport{
 
             let img = viewport.render(&ray_color_d, scene());
 
-            write_img_f32(img, "camera_default_test.png".to_string());
+            write_img_f32(img, "out/camera_default_test.png".to_string());
         }
         #[test]
         fn fov_120(){
@@ -693,7 +692,7 @@ pub mod viewport{
 
             let img = viewport.render(&ray_color_d, scene());
 
-            write_img_f32(img, "camera_fov_120_test.png".to_string());
+            write_img_f32(img, "out/camera_fov_120_test.png".to_string());
         }
         #[test]
         fn upside_down(){
@@ -701,7 +700,7 @@ pub mod viewport{
 
             let img = viewport.render(&ray_color_d, scene());
 
-            write_img_f32(img, "camera_upside_down_test.png".to_string());
+            write_img_f32(img, "out/camera_upside_down_test.png".to_string());
         }
         #[test]
         fn depth_of_field(){
@@ -709,11 +708,69 @@ pub mod viewport{
 
             let img = viewport.render(&ray_color_d, scene());
 
-            write_img_f32(img, "camera_depth_of_field_test.png".to_string());
+            write_img_f32(img, "out/camera_depth_of_field_test.png".to_string());
         }
 
     }
+    #[cfg(test)]
+    mod texture_test{
+        use super::*;
+        use crate::write_img::img_writer::write_img_f32;
+        use crate::objects::objects::materials::{SCATTER_M, METALLIC_M};
+        use crate::texture::texture::ImageTexture;
 
+        fn ray_color_d(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
+            // eprintln!("D: {}", depth);
+            if depth < 1 {
+                return Rgb([0.0, 0.0, 0.0]);
+            }
+            let mint = 0.001;
+            let maxt = 1000.0;
+
+            let hit = scene.aabb.collision_normal(r, mint, maxt);
+
+            if hit != NO_HIT {
+                // eprintln!("Hit: {:?}", hit );
+                let cm = hit.col_mod;
+                let front = if r.direction.dot(hit.normal) > 0.0 {
+                    false
+                } else {
+                    true
+                };
+                let mut next = hit.mat.on_hit(hit, r);
+                if next.direction.close_to_zero() {
+                    next.direction = if front { hit.normal } else { hit.normal * -1.0 };
+                }
+                // println!("depth: {}", depth);
+                return (Vec3::from_rgb(ray_color_d(next, scene, depth - 1)) * cm).to_rgb();
+            }
+            // eprintln!("Sky");
+            let unit_direction = r.direction.unit();
+            let t = 0.5 * (unit_direction.y + 1.0);
+            return Rgb([(1.0 - t) + t * 0.5, (1 as f32 - t) + t * 0.7, 1.0]); //(1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0);
+        }
+
+        #[test]
+        fn default_test(){
+            let rt = tokio::runtime::Builder::new_multi_thread().build().unwrap();
+            
+            rt.block_on(async {
+                let samples = 100;
+                let spheres  = vec!{
+                    // Sphere::new_with_texture(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M), ImageTexture:: from_path("assets/default.png").expect("image not found")),
+                    // Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M)),
+                    Sphere::new_with_texture(Vec3 {x: -1.0, y: 0.0, z:  -0.0}, 0.05, Some(Vec3::new(1.0, 1.0, 1.0)), Some(METALLIC_M), ImageTexture::from_path("assets/earthmap.jpg").expect("image not found")),
+                };
+                let scene = Scene::new(spheres);
+                let viewport = Viewport::new_from_res(2000, 2000 , samples, 10, 2.0, Some(7.0), None, Some(Vec3 { x: -1.0, y: 0.0, z: -0.0 }), None, Some("texture test".to_string()), None);
+
+                let img =  async_render(viewport, ray_color_d, scene).await; 
+
+                write_img_f32(img, "out/texture_test.png".to_string());
+                }
+            );
+        }
+    }
     #[cfg(test)]
     mod json_tests{
         use super::*;
@@ -730,8 +787,8 @@ pub mod viewport{
                 ]
             );
             let obj:JsonValue = scene.to_owned().into();
-            println!("{:#}", obj);
-            println!("{:#}", obj["spheres"]);
+            // println!("obj: {:#}", obj);
+            // println!("spheres: {:#}", obj["spheres"]);
 
             let json_s = match Scene::try_from(obj){
                 Ok(s) => s,

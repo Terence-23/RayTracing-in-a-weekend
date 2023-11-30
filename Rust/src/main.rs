@@ -2,6 +2,7 @@ mod objects;
 mod vec3;
 mod viewport;
 mod write_img;
+mod texture;
 
 use image::Rgb;
 use objects::objects::{materials::*, Object, Sphere, NO_HIT};
@@ -160,8 +161,8 @@ fn main() {
     ];
     let _scene = Scene::new(spheres);
     let mut viewport = Viewport::new_from_res(
-320,
-        180,
+        800,
+        600,
         SAMPLES,
         DEPTH,
         2.0,
@@ -188,6 +189,8 @@ fn main() {
     viewport.fps = 15.0;
     viewport.number_of_frames = 1; //20;
     viewport.shutter_speed = 1.0/20.0;
+
+    write_img_f32(viewport.render(&ray_color_d, ltr_scene.clone()), "Default image.png".to_string());
     let _video = test_run( "First frame.png".to_string(), viewport, ray_color_d, &ltr_scene);
     
     // Command::new("mkdir").arg("-p").arg("/tmp/video").spawn().expect("Failed to execute mkdir");
