@@ -3,7 +3,7 @@ pub mod img_writer{
 
     use image::{Rgb, ImageBuffer};
 
-    pub fn write_img_f32(arr: Vec<Vec<Rgb<f32>>>, filename:String){
+    pub fn write_img_f32(arr: &Vec<Vec<Rgb<f32>>>, filename:String){
 
         let mut img = ImageBuffer::new(arr[0].len() as u32, arr.len() as u32);
 

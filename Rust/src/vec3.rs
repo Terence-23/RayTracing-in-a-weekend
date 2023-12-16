@@ -1,8 +1,8 @@
 #[allow(dead_code)]
 pub mod vec3 {
-    use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign, Neg};
     use json::JsonValue;
     use rand::random;
+    use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
     use image::Rgb;
 
@@ -14,12 +14,12 @@ pub mod vec3 {
         pub z: f32,
     }
 
-impl PartialEq for Vec3 {
-    fn eq(&self, other: &Self) -> bool {
-        (*self - *other).close_to_zero()
+    impl PartialEq for Vec3 {
+        fn eq(&self, other: &Self) -> bool {
+            (*self - *other).close_to_zero()
+        }
     }
-}
-    impl Into<JsonValue> for Vec3{
+    impl Into<JsonValue> for Vec3 {
         fn into(self) -> JsonValue {
             json::object! {
                 x: self.x,
@@ -28,33 +28,35 @@ impl PartialEq for Vec3 {
             }
         }
     }
-    impl TryFrom<JsonValue> for Vec3{
+    impl TryFrom<JsonValue> for Vec3 {
         type Error = errors::ParseError;
 
         fn try_from(value: JsonValue) -> Result<Self, Self::Error> {
-            Ok(
-                Vec3 { 
-                    x: match value["x"].as_f32(){
-                        Some(x) => x,
-                        None => return Err(Self::Error{source: None})
-                    }, 
-                    y: match value["y"].as_f32(){
-                        Some(x) => x,
-                        None => return Err(Self::Error{source: None})
-                    }, 
-                    z: match value["z"].as_f32(){
-                        Some(x) => x,
-                        None => return Err(Self::Error{source: None})
-                    } 
-                }
-            )
+            Ok(Vec3 {
+                x: match value["x"].as_f32() {
+                    Some(x) => x,
+                    None => return Err(Self::Error { source: None }),
+                },
+                y: match value["y"].as_f32() {
+                    Some(x) => x,
+                    None => return Err(Self::Error { source: None }),
+                },
+                z: match value["z"].as_f32() {
+                    Some(x) => x,
+                    None => return Err(Self::Error { source: None }),
+                },
+            })
         }
     }
-    impl Neg for Vec3{
+    impl Neg for Vec3 {
         type Output = Self;
-        fn neg(self) -> Self{
-            Vec3 { x: -self.x, y: -self.y, z: -self.z }
-        } 
+        fn neg(self) -> Self {
+            Vec3 {
+                x: -self.x,
+                y: -self.y,
+                z: -self.z,
+            }
+        }
     }
     impl MulAssign<f32> for Vec3 {
         fn mul_assign(&mut self, rhs: f32) {
@@ -153,7 +155,7 @@ impl PartialEq for Vec3 {
         pub fn new(x: f32, y: f32, z: f32) -> Self {
             Self { x, y, z }
         }
-        pub fn to_rgb(&self) ->Rgb<f32>{
+        pub fn to_rgb(&self) -> Rgb<f32> {
             Rgb([self.x, self.y, self.z])
         }
         pub fn length2(&self) -> f32 {
@@ -176,46 +178,60 @@ impl PartialEq for Vec3 {
             *self / self.length()
         }
         pub fn from_rgb(col: Rgb<f32>) -> Vec3 {
-            Vec3{x:col.0[0], y:col.0[1], z:col.0[2]}
+            Vec3 {
+                x: col.0[0],
+                y: col.0[1],
+                z: col.0[2],
+            }
         }
-        pub fn from_rgb_ref(col: &Rgb<f32>) ->Vec3{
-            Vec3{x:col.0[0], y:col.0[1], z:col.0[2]}
+        pub fn from_rgb_ref(col: &Rgb<f32>) -> Vec3 {
+            Vec3 {
+                x: col.0[0],
+                y: col.0[1],
+                z: col.0[2],
+            }
         }
-        pub fn random(min: f32, max:f32) ->Vec3{
-            Vec3 { x: random::<f32>() * (max - min) + min, y: random::<f32>() * (max - min) + min, z: random::<f32>() * (max - min) + min }
+        pub fn random(min: f32, max: f32) -> Vec3 {
+            Vec3 {
+                x: random::<f32>() * (max - min) + min,
+                y: random::<f32>() * (max - min) + min,
+                z: random::<f32>() * (max - min) + min,
+            }
         }
-        pub fn random_unit_vec() ->Vec3{
+        pub fn random_unit_vec() -> Vec3 {
             // println!("rand_vec");
-            return loop{
-                let p = Vec3::random(-1.0,1.0);
+            return loop {
+                let p = Vec3::random(-1.0, 1.0);
                 // println!("vec: {:?}, len: {}", p, p.x * p.x + p.y * p.y + p.z * p.z);
                 if (p.x * p.x + p.y * p.y + p.z * p.z) <= 1.0 {
                     break p;
                 }
-            }.unit();
+            }
+            .unit();
             // return p.unit();
         }
-        pub fn random_in_unit_disk() ->Vec3{
+        pub fn random_in_unit_disk() -> Vec3 {
             // println!("rand_vec");
-            return loop{
-                let p = Vec3 { x: random::<f32>() * 2.0 - 1.0, y: random::<f32>() * 2.0 - 1.0, z: 0.0};
+            return loop {
+                let p = Vec3 {
+                    x: random::<f32>() * 2.0 - 1.0,
+                    y: random::<f32>() * 2.0 - 1.0,
+                    z: 0.0,
+                };
                 // println!("vec: {:?}, len: {}", p, p.x * p.x + p.y * p.y + p.z * p.z);
                 if (p.x * p.x + p.y * p.y) <= 1.0 {
                     break p;
                 }
-            }
+            };
             // return p.unit();
         }
 
-        pub fn reflect(&self, n: Vec3) -> Vec3{
+        pub fn reflect(&self, n: Vec3) -> Vec3 {
             *self - n * 2.0 * self.dot(n)
         }
-        pub fn close_to_zero(&self) -> bool{
+        pub fn close_to_zero(&self) -> bool {
             self.x.abs() < 1e-7 && self.y.abs() < 1e-7 && self.z.abs() < 1e-7
         }
-
-        
-
     }
 }
 #[allow(dead_code)]
@@ -232,10 +248,18 @@ pub mod ray {
 
     impl Ray {
         pub fn new(origin: Vec3, direction: Vec3) -> Self {
-            Self { origin, direction , time: 0.0}
+            Self {
+                origin,
+                direction,
+                time: 0.0,
+            }
         }
         pub fn new_with_time(origin: Vec3, direction: Vec3, time: f32) -> Self {
-            Self { origin, direction , time}
+            Self {
+                origin,
+                direction,
+                time,
+            }
         }
 
         pub fn at(&self, t: f32) -> Vec3 {
@@ -249,11 +273,11 @@ pub mod ray {
         return Rgb([(1.0 - t) + t * 0.5, (1 as f32 - t) + t * 0.7, 1.0]); //(1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0);
     }
     #[allow(unused_imports)]
-    mod tests{
+    mod tests {
         use super::*;
 
-        use indicatif::{ProgressBar, ProgressStyle};
         use crate::write_img::img_writer::write_img_f32;
+        use indicatif::{ProgressBar, ProgressStyle};
         #[test]
         pub fn viewport_test() {
             let aspect_ratio = 3.0 / 2.0;
@@ -299,8 +323,7 @@ pub mod ray {
             }
             pb.finish_with_message("Writing to disk");
 
-            write_img_f32(img, "out/viewport_test.png".to_string());
+            write_img_f32(&img, "out/viewport_test.png".to_string());
         }
     }
-
 }

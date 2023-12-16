@@ -61,6 +61,7 @@ fn ray_color_d(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
 #[allow(unused_imports)]
 use std::{time::Instant, process::Command};
 
+#[allow(unused)]
 fn test_run(f_name:String, viewport: Viewport, ray_color: impl Fn(Ray, &Scene, usize) -> Rgb<f32> + std::marker::Send+ std::marker::Copy + 'static, scene: &Scene) -> Vec<Img>{
         println!(
             "Rendering {} samples",
@@ -72,7 +73,7 @@ fn test_run(f_name:String, viewport: Viewport, ray_color: impl Fn(Ray, &Scene, u
         let future =
             viewport::viewport::render_multi(viewport.to_owned(), ray_color, scene.to_owned());
         let img = rt.block_on(future);
-        write_img_f32(img[0].to_owned(), f_name);
+        write_img_f32(&img[0], f_name);
 
         println!("Finished\nElapsed time: {:?}, num of frames: {:?}", before.elapsed(), img.len());
         return img
@@ -161,8 +162,8 @@ fn main() {
     ];
     let _scene = Scene::new(spheres);
     let mut viewport = Viewport::new_from_res(
-        800,
-        600,
+        4000,
+        4000,
         SAMPLES,
         DEPTH,
         2.0,
@@ -177,7 +178,7 @@ fn main() {
     viewport.start_frame =0;
     viewport.fps = 60.0;
     viewport.number_of_frames = 1;
-    viewport.shutter_speed = 1.0/600.0;
+    viewport.shutter_speed = 0.0;
 
     let ltr_spheres = vec![
         Sphere::new_moving(Vec3 { x: -1.0, y: 0.0, z: -1.0 }, 0.4, Some(Vec3::new(0.9, 0.9, 0.9)), Some(METALLIC_M), Vec3::new(1.0, 0.0, 0.0)),
@@ -188,9 +189,9 @@ fn main() {
 
     viewport.fps = 15.0;
     viewport.number_of_frames = 1; //20;
-    viewport.shutter_speed = 1.0/20.0;
+    viewport.shutter_speed = 0.0;
 
-    write_img_f32(viewport.render(&ray_color_d, ltr_scene.clone()), "Default image.png".to_string());
+    // write_img_f32(viewport.render(&ray_color_d, ltr_scene.clone()), "Default image.png".to_string());
     let _video = test_run( "First frame.png".to_string(), viewport, ray_color_d, &ltr_scene);
     
     // Command::new("mkdir").arg("-p").arg("/tmp/video").spawn().expect("Failed to execute mkdir");

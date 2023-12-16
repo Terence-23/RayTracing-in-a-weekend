@@ -128,7 +128,7 @@ pub mod viewport{
         Vec3 { x: col.x.powf(gamma), y: col.y.powf(gamma), z: col.z.powf(gamma) }
     }
 
-    pub async fn async_render(viewport: Viewport, ray_color: impl Fn(Ray, &Scene, usize)->Rgb<f32> + std::marker::Send + std::marker::Copy + 'static, scene: Scene) -> Img{
+    pub async fn async_render(viewport: Box<Viewport>, ray_color: impl Fn(Ray, &Scene, usize)->Rgb<f32> + std::marker::Send + std::marker::Copy + 'static, scene: Box<Scene>) -> Img{
         let mut img: Img = Vec::with_capacity(viewport.height as usize);
         let mut tasks = Vec::with_capacity(viewport.height as usize);
         let pb = ProgressBar::new(viewport.height);
@@ -142,10 +142,12 @@ pub mod viewport{
         );
         pb.set_message(viewport.msg.to_owned());
         let inv_g = 1.0 / viewport.gamma;
+        let viewport = Box::leak(viewport);
+        let scene = Box::leak(scene);
 
         for j in 0..(viewport.height as usize){
             tasks.push(
-                tokio::spawn(render_row(viewport.to_owned(), ray_color, scene.to_owned(), inv_g, j))
+                tokio::spawn(render_row(viewport, ray_color, scene, inv_g, j))
             );
         }
         for t in tasks{
@@ -153,21 +155,23 @@ pub mod viewport{
             pb.inc(1);
         }
         pb.finish_with_message("Img ready");
+        
+        
         return img;
     }
     pub async fn render_multi(viewport: Viewport, ray_color: impl Fn(Ray, &Scene, usize)->Rgb<f32> + std::marker::Send + std::marker::Copy + 'static, scene: Scene) -> Vec<Img>{
-        let mut viewport = viewport.clone();
+        let mut viewport: Viewport = viewport.clone();
         let mut video = Vec::new();
         for i in viewport.start_frame..viewport.number_of_frames+viewport.start_frame{
             viewport.frame = i;
             viewport.msg = format!("Rendering, num: {}", i);
-            video.push(async_render(viewport.to_owned(), ray_color, scene.to_owned()).await);    
+            video.push(async_render(Box::new(viewport.clone()), ray_color, Box::new(scene.clone())).await);    
         }
         return video;
     }
-    async fn render_row(viewport: Viewport, ray_color: impl Fn(Ray, &Scene, usize)->Rgb<f32>, scene: Scene, inv_g: f32, j: usize) -> Vec<Rgb<f32>> {
+    async fn render_row(viewport: &Viewport, ray_color: impl Fn(Ray, &Scene, usize)->Rgb<f32>, scene: &Scene, inv_g: f32, j: usize) -> Vec<Rgb<f32>> {
             
-        let mut row = Vec::new();
+        let mut row = Vec::with_capacity(viewport.width as usize);
         let mut rng = rand::thread_rng();
         let time = viewport.frame as f32 / viewport.fps;
 
@@ -275,7 +279,7 @@ pub mod viewport{
         }
 
         pub fn render(&self, ray_color: &dyn Fn(Ray, &Scene, usize)->Rgb<f32>, scene: Scene) -> Img{
-            let mut img: Img = Vec::new();
+            let mut img: Img = Vec::with_capacity(self.height as usize);
             let pb = ProgressBar::new(self.height);
             pb.set_style(
                 ProgressStyle::default_bar()
@@ -442,382 +446,21 @@ pub mod viewport{
 
             let img = viewport.render(&ray_color, scene);
 
-            write_img_f32(img, "out/viewport_object.png".to_string());
+            write_img_f32(&img, "out/viewport_object.png".to_string());
 
         }
     
     }
     #[cfg(test)]
-    mod material_tests{
-        use super::*;
-        use crate::write_img::img_writer::write_img_f32;
-        use crate::objects::objects::materials::{EMPTY_M, SCATTER_M, METALLIC_M, FUZZY3_M, GLASS_M, GLASSR_M};
-        #[test]
-        pub fn diffuse_test(){
-            let samples = 100;
-            let spheres  = vec!{
-                Sphere::new(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.6, 0.6, 0.6)), Some(SCATTER_M)),
-                Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M)),
-                Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(SCATTER_M)),
-            };
-            let scene = Scene::new(spheres);
-            let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0, None, None, None, None, Some("Diffuse test".to_string()), None);
-
-            let img = viewport.render(&ray_color_d, scene);
-
-            write_img_f32(img, "out/diffuse_test.png".to_string());
-
-        }
-        #[test]
-        pub fn metal_test(){
-            let samples = 100;
-            let spheres  = vec!{
-                Sphere::new(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 0.6, 0.6)), Some(FUZZY3_M)),
-                Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.5, 0.9, 0.9)), Some(METALLIC_M)),
-                Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(SCATTER_M)),
-                Sphere::new(Vec3 {x: 0.0, y: -1000.9, z: -5.0,}, 1000.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(EMPTY_M)),
-            };
-            let scene = Scene::new(spheres);
-            let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0, None, None, None, None, Some("Metallic test".to_string()), None);
-
-            let img = viewport.render(&ray_color_d, scene);
-
-            write_img_f32(img, "out/metal_test.png".to_string());
-
-        }
-        #[test]
-        pub fn glass_test_controll(){
-            let samples = 100;
-            let spheres  = vec!{
-                Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(METALLIC_M)),
-                // Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.5, 0.9, 0.9)), Some(METALLIC_M)),
-                // Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(SCATTER_M)),
-                Sphere::new(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(EMPTY_M)),
-            };
-            let scene = Scene::new(spheres);
-            let viewport = Viewport::new_from_res(300, 200, samples, 10, 2.0, None, None, None, None, Some("Control for dielectric test".to_string()), None);
-
-            let img = viewport.render(&ray_color_d, scene);
-
-            write_img_f32(img, "out/glass_test_c.png".to_string());
-
-        }
-        #[test]
-        pub fn glass_test(){
-            let samples = 100;
-            let spheres  = vec!{
-                Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(GLASS_M)),
-                Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -1.0,}, 0.35, Some(Vec3::new(1.0, 1.0, 1.0)), Some(GLASSR_M)),
-                // Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.5, 0.9, 0.9)), Some(METALLIC_M)),
-                // Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(SCATTER_M)),
-                Sphere::new(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(EMPTY_M)),
-            };
-            let scene = Scene::new(spheres);
-            let viewport = Viewport::new_from_res(300, 200, samples, 10, 2.0, None, None, None, None, Some("Dielectric test".to_string()), None);
-
-            let img = viewport.render(&ray_color_d, scene);
-
-            write_img_f32(img, "out/glass_test.png".to_string());
-
-        }
-    }
+    mod material_tests;
     #[cfg(test)]
     #[allow(unused_imports)]
-    mod glass_tests{
-        use super::*;
-        use crate::write_img::img_writer::write_img_f32;
-        use crate::objects::objects::materials::{EMPTY_M, SCATTER_M, METALLIC_M, FUZZY3_M, GLASS_M};
-
-        const WIDTH: u64 = 10;
-        const HEIGHT: u64 = 10;
-
-        fn ray_color(r: Ray, scene: &Scene, depth:usize) -> Rgb<f32> {
-            eprintln!("D: {}", depth);
-            if depth < 1{
-                
-                return Rgb([0.0, 0.0, 0.0])
-            }
-            let mint = 0.001; let maxt = 1000.0;
-            
-            let hit = {
-                let mut min_hit = scene.spheres[0].collision_normal(r, mint, maxt);
-                for i in scene.spheres[..].into_iter().map(|sp| sp.collision_normal(r, mint, maxt)){
-    
-                    if i == NO_HIT{continue;}
-                    if min_hit == NO_HIT || min_hit > i {
-                        min_hit = i;
-                    }
-                }
-                min_hit
-            };
-    
-            if hit != NO_HIT {
-                eprintln!("Hit");
-                if hit.mat.metallicness != 1.0 {
-                    return Rgb([1.0, 1.0, 0.0])
-                }
-                let cm = hit.col_mod;
-                let front = if r.direction.dot(hit.normal) > 0.0 {
-                    false
-                } else {
-                    true
-                };
-                let mut next = hit.mat.on_hit(hit, r);
-                if next.direction.close_to_zero(){
-                    next.direction = if front {hit.normal} else {hit.normal * -1.0};
-                }
-                eprintln!("{:?}", next);
-                // println!("depth: {}", depth);
-                return (Vec3::from_rgb(ray_color(next, scene, depth-1)) * cm).to_rgb();
-            }
-            eprintln!("Sky");
-            let unit_direction = r.direction.unit();
-            let _t = 0.5 * (unit_direction.y + 1.0);
-            return Rgb([0.0, 0.0, 1.0]); //(1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0);
-        }
-
-        fn glass_test_controll(){
-            let samples = 100;
-            let spheres  = vec!{
-                Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(METALLIC_M)),
-                Sphere::new(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(0.8, 0.5, 1.0)), Some(EMPTY_M)),
-            };
-            let scene = Scene::new(spheres);
-            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, samples, 10, 2.0, None, None, None, None, Some("Control for dielectric test".to_string()), None);
-
-            let img = viewport.render_no_rand(&ray_color, scene);
-
-            write_img_f32(img, "out/s_glass_test_c.png".to_string());
-
-        }
-        fn glass_test(){
-            let samples = 100;
-            let spheres  = vec!{
-                Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(GLASS_M)),
-                Sphere::new(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(1.0, 1.0, 1.0)), Some(EMPTY_M)),
-            };
-            let scene = Scene::new(spheres);
-            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, samples, 10, 2.0, None, None, None, None, Some("Dielectric test".to_string()), None);
-
-            let img = viewport.render_no_rand(&ray_color, scene);
-
-            write_img_f32(img, "out/s_glass_test.png".to_string());
-            
-        }
-        
-        use image::GenericImageView;
-        use image::io::Reader;
-        #[test]
-        #[ignore = "used for debugging"]
-        fn runner(){
-
-            glass_test_controll();
-            glass_test();
-            
-            let r_controll_image = match Reader::open("./s_glass_test_c.png"){
-                Ok(s) => match s.decode(){
-                    Ok(s2) => s2,
-                    Err(_) => panic!("cannot read image")
-                },
-                Err(_) => panic!("cannot read image")
-            };
-            let c_controll_image = match Reader::open("./test_c.ppm"){
-                Ok(s) => match s.decode(){
-                    Ok(s2) => s2,
-                    Err(_) => panic!("cannot read image")
-                },
-                Err(_) => panic!("cannot read image")
-            };
-            use std::iter::zip;
-            for (rp, cp) in zip(r_controll_image.pixels(), c_controll_image.pixels()){
-                eprintln!("rust: {:?}, cpp: {:?}", rp, cp);
-                assert!(rp == cp, "Different controll pixels") 
-            }
-
-            assert!(r_controll_image == c_controll_image, "Different controll images");
-
-            let r_glass_image = match Reader::open("./s_glass_test.png"){
-                Ok(s) => match s.decode(){
-                    Ok(s2) => s2,
-                    Err(_) => panic!("cannot read image")
-                },
-                Err(_) => panic!("cannot read image")
-            };
-            let c_glass_image = match Reader::open("./test.ppm"){
-                Ok(s) => match s.decode(){
-                    Ok(s2) => s2,
-                    Err(_) => panic!("cannot read image")
-                },
-                Err(_) => panic!("cannot read image")
-            };
-
-            assert!(r_glass_image == c_glass_image, "Different glass images");
-
-        }
-
-    }
+    mod glass_tests;
     #[cfg(test)]
-    mod camera_tests{
-        use super::*;
-        use crate::write_img::img_writer::write_img_f32;
-        use crate::objects::objects::materials::{SCATTER_M, METALLIC_M};
-
-        const WIDTH: u64 = 400;
-        const HEIGHT: u64 = 300;
-        const SAMPLES: usize = 100;
-        const DEPTH: usize = 10;
-        const GAMMA: f32 = 2.0;
-
-        fn scene() -> Scene{
-            Scene::new(vec!
-                [
-                    Sphere::new(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.6, 0.6, 0.6)), Some(SCATTER_M)),
-                    Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M)),
-                    Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(METALLIC_M)),
-                ]
-            )
-        }
-
-        #[test]
-        fn default_settings(){
-            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, SAMPLES, DEPTH, GAMMA, None, None, None, None, Some("Camera: default test".to_string()), None);
-
-            let img = viewport.render(&ray_color_d, scene());
-
-            write_img_f32(img, "out/camera_default_test.png".to_string());
-        }
-        #[test]
-        fn fov_120(){
-            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, SAMPLES, DEPTH, GAMMA, Some(120.0), None, None, None, Some("Camera: fov 120 test".to_string()), None);
-
-            let img = viewport.render(&ray_color_d, scene());
-
-            write_img_f32(img, "out/camera_fov_120_test.png".to_string());
-        }
-        #[test]
-        fn upside_down(){
-            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, SAMPLES, DEPTH, GAMMA, None, None, None, Some(Vec3 { x: 0.0, y: -1.0, z: 0.0 }), Some("Camera: upside down test".to_string()), None);
-
-            let img = viewport.render(&ray_color_d, scene());
-
-            write_img_f32(img, "out/camera_upside_down_test.png".to_string());
-        }
-        #[test]
-        fn depth_of_field(){
-            let viewport = Viewport::new_from_res(WIDTH, HEIGHT, SAMPLES, DEPTH, GAMMA, None, None, None, Some(Vec3 { x: 0.0, y: -1.0, z: 0.0 }), Some("Camera: depth of field test".to_string()), Some(0.015));
-
-            let img = viewport.render(&ray_color_d, scene());
-
-            write_img_f32(img, "out/camera_depth_of_field_test.png".to_string());
-        }
-
-    }
+    mod camera_tests;
     #[cfg(test)]
-    mod texture_test{
-        use super::*;
-        use crate::write_img::img_writer::write_img_f32;
-        use crate::objects::objects::materials::{SCATTER_M, METALLIC_M};
-        use crate::texture::texture::ImageTexture;
-
-        fn ray_color_d(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
-            // eprintln!("D: {}", depth);
-            if depth < 1 {
-                return Rgb([0.0, 0.0, 0.0]);
-            }
-            let mint = 0.001;
-            let maxt = 1000.0;
-
-            let hit = scene.aabb.collision_normal(r, mint, maxt);
-
-            if hit != NO_HIT {
-                // eprintln!("Hit: {:?}", hit );
-                let cm = hit.col_mod;
-                let front = if r.direction.dot(hit.normal) > 0.0 {
-                    false
-                } else {
-                    true
-                };
-                let mut next = hit.mat.on_hit(hit, r);
-                if next.direction.close_to_zero() {
-                    next.direction = if front { hit.normal } else { hit.normal * -1.0 };
-                }
-                // println!("depth: {}", depth);
-                return (Vec3::from_rgb(ray_color_d(next, scene, depth - 1)) * cm).to_rgb();
-            }
-            // eprintln!("Sky");
-            let unit_direction = r.direction.unit();
-            let t = 0.5 * (unit_direction.y + 1.0);
-            return Rgb([(1.0 - t) + t * 0.5, (1 as f32 - t) + t * 0.7, 1.0]); //(1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0);
-        }
-
-        #[test]
-        fn default_test(){
-            let rt = tokio::runtime::Builder::new_multi_thread().build().unwrap();
-            
-            rt.block_on(async {
-                let samples = 100;
-                let spheres  = vec!{
-                    // Sphere::new_with_texture(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M), ImageTexture:: from_path("assets/default.png").expect("image not found")),
-                    // Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M)),
-                    Sphere::new_with_texture(Vec3 {x: -1.0, y: 0.0, z:  -0.0}, 0.05, Some(Vec3::new(1.0, 1.0, 1.0)), Some(METALLIC_M), ImageTexture::from_path("assets/earthmap.jpg").expect("image not found")),
-                };
-                let scene = Scene::new(spheres);
-                let viewport = Viewport::new_from_res(2000, 2000 , samples, 10, 2.0, Some(7.0), None, Some(Vec3 { x: -1.0, y: 0.0, z: -0.0 }), None, Some("texture test".to_string()), None);
-
-                let img =  async_render(viewport, ray_color_d, scene).await; 
-
-                write_img_f32(img, "out/texture_test.png".to_string());
-                }
-            );
-        }
-    }
+    #[allow(unused_imports)]
+    mod texture_test;
     #[cfg(test)]
-    mod json_tests{
-        use super::*;
-        use crate::objects::objects::materials::{SCATTER_M, METALLIC_M};
-
-        #[test]
-        fn serialize_test(){
-
-            let scene = Scene::new(vec!
-                [
-                    Sphere::new(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.6, 0.6, 0.6)), Some(SCATTER_M)),
-                    Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M)),
-                    Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(METALLIC_M)),
-                ]
-            );
-            let obj:JsonValue = scene.to_owned().into();
-            // println!("obj: {:#}", obj);
-            // println!("spheres: {:#}", obj["spheres"]);
-
-            let json_s = match Scene::try_from(obj){
-                Ok(s) => s,
-                Err(e) => panic!("{}" ,e)
-            };
-            println!("Scene: {:?}", json_s);
-
-       }
-       #[test]
-       fn deserialize_test(){
-            let scene = Scene::new(vec!
-                [
-                    Sphere::new(Vec3 {x: -0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.6, 0.6, 0.6)), Some(SCATTER_M)),
-                    Sphere::new(Vec3 {x: 0.5, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M)),
-                    Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -2.0,}, 1.0, Some(Vec3::new(0.5, 1.0, 0.0)), Some(METALLIC_M)),
-                ]
-            );
-            let obj:JsonValue = scene.to_owned().into();
-            println!("{:#}", obj);
-            println!("{:#}", obj["spheres"]);
-
-            let json_s = match Scene::try_from(obj){
-                Ok(s) => s,
-                Err(e) => panic!("{}" ,e)
-            };
-            println!("Scene: {:?}", json_s);
-
-            assert_eq!(scene, json_s);
-       }
-
-    }
+    mod json_tests;
 }

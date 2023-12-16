@@ -378,15 +378,7 @@ impl Debug for Sphere {
             return min_hit;
         }
     }
-    // impl Debug for Sphere<'_>{
-    //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    //         f.debug_struct("Sphere")
-    //         .field("origin", &self.origin)
-    //         .field("radius", &self.radius)
-    //         .field("col_mod", &self.col_mod)
-    //         .finish()
-    //     }
-    // }
+    
     impl Into<JsonValue> for Sphere{
         fn into(self) -> JsonValue {
             json::object! {
@@ -466,8 +458,8 @@ impl Debug for Sphere {
             let u: f32 = (f32::atan2(-point.z, point.x) + std::f32::consts::PI) * std::f32::consts::FRAC_1_PI * 0.5;
             let v: f32 = 1.0 - (std::f32::consts::FRAC_1_PI * f32::acos( -point.y));
 
-            debug_assert!(u <= 1.0, "U too big");
-            debug_assert!(v <= 1.0  && v >= 0.0, "V too big");
+            debug_assert!(u <= 1.0 && v >= 0.0, "U too big");
+            debug_assert!(v <= 1.0 && v >= 0.0, "V too big");
 
             let tex_x = (u * (self.texture.row -  1) as f32).floor() as usize;
             let tex_y = (v  * (self.texture.col - 1) as f32).floor() as usize;
@@ -477,7 +469,7 @@ impl Debug for Sphere {
                 normal:(r.at(x) - self.origin).unit(), 
                 point: point, 
                 mat: self.mat, 
-                col_mod: self.texture.color_at(tex_x, tex_y) * self.col_mod
+                col_mod: self.texture.color_at(tex_x, tex_y, point) * self.col_mod
             }
         }
     }
@@ -662,7 +654,7 @@ impl Debug for Sphere {
             }
             pb.finish_with_message("Writing to disk");
 
-            write_img_f32(img, "out/sphere_test.png".to_string());
+            write_img_f32(&img, "out/sphere_test.png".to_string());
         }
         #[test]
         pub fn sphere_test_normal(){
@@ -709,7 +701,7 @@ impl Debug for Sphere {
         }
         pb.finish_with_message("Writing to disk");
 
-        write_img_f32(img, "out/normal_test.png".to_string());
+        write_img_f32(&img, "out/normal_test.png".to_string());
     }
     }
 }
