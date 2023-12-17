@@ -23,11 +23,11 @@ use super::*;
         let spheres  = vec!{
             Sphere::new(Vec3 {x: -1.0, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.8, 0.8, 0.8)), Some(METALLIC_M)),
             Sphere::new(Vec3 {x: 1.0, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.8, 0.6, 0.2)), Some(METALLIC_M)),
-            Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -1.0,}, 1.0, Some(Vec3::new(0.7, 0.30, 0.30)), Some(SCATTER_M)),
+            Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.7, 0.30, 0.30)), Some(SCATTER_M)),
             Sphere::new(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(0.8, 0.8, 0.0)), Some(SCATTER_M)),
         };
         let scene = Scene::new(spheres);
-        let viewport = Viewport::new_from_res(800, 600, samples, 10, 2.0, None, None, None, None, Some("Metallic test".to_string()), None);
+        let viewport = Viewport::new_from_res(400, 225, samples, 10, 2.0, None, None, None, None, Some("Metallic test".to_string()), None);
 
         let img = viewport.render(&ray_color_d, scene);
 

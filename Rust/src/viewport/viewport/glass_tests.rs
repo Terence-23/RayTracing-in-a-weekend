@@ -59,7 +59,7 @@ use super::*;
         let scene = Scene::new(spheres);
         let viewport = Viewport::new_from_res(WIDTH, HEIGHT, samples, 10, 2.0, None, None, None, None, Some("Control for dielectric test".to_string()), None);
 
-        let img = viewport.render_no_rand(&ray_color, scene);
+        let img = viewport.render_no_rand(&ray_color, &scene);
 
         write_img_f32(&img, "out/s_glass_test_c.png".to_string());
 
@@ -73,7 +73,7 @@ use super::*;
         let scene = Scene::new(spheres);
         let viewport = Viewport::new_from_res(WIDTH, HEIGHT, samples, 10, 2.0, None, None, None, None, Some("Dielectric test".to_string()), None);
 
-        let img = viewport.render_no_rand(&ray_color, scene);
+        let img = viewport.render_no_rand(&ray_color, &scene);
 
         write_img_f32(&img, "out/s_glass_test.png".to_string());
         

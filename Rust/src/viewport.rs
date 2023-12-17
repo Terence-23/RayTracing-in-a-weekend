@@ -316,7 +316,7 @@ pub mod viewport{
             pb.finish_with_message("Img ready");
             return img;
         }
-        pub fn render_no_rand(&self, ray_color: &dyn Fn(Ray, &Scene, usize)->Rgb<f32>, scene: Scene) -> Img{
+        pub fn render_no_rand(&self, ray_color: &dyn Fn(Ray, &Scene, usize)->Rgb<f32>, scene: &Scene) -> Img{
             let mut img: Img = Vec::new();
             let pb = ProgressBar::new(self.height);
             pb.set_style(

@@ -350,7 +350,7 @@ impl Debug for Sphere {
             if self.aabbs.len() > 0{
                 for i in self.aabbs[..]
                     .into_iter()
-                    .map(|aabb| aabb.collision_normal(r, min, max))
+                    .map(|aabb| aabb.collision_normal(r, mint, maxt))
                 {
                     if i == NO_HIT {
                         continue;
@@ -364,7 +364,7 @@ impl Debug for Sphere {
             else{
                 for i in self.spheres[..]
                     .into_iter()
-                    .map(|sp| sp.collision_normal(r, min, max))
+                    .map(|sp| sp.collision_normal(r, mint, maxt))
                 {
                     if i == NO_HIT {
                         continue;
@@ -446,17 +446,26 @@ impl Debug for Sphere {
             }
 
             let mut x = (-b - d.sqrt()) / a;
-            if x < mint {x = (-b + d.sqrt()) / a}
+            if x < mint {
+                // dbg!(r.direction.length());
+                // dbg!(r.at(x)); 
+                // dbg!(mint); 
+                // dbg!(x);
+                // dbg!((r.at(x) - origin).length());
+                x = (-b + d.sqrt()) / a
+            }
 
+            
             if x < mint || x > maxt {
+                // dbg!(x);
                 return NO_HIT;
             }
             // println!("mint: {}", mint);
             debug_assert_ne!(x, 0.0);
-            let point = (r.at(x) - self.origin).unit();
+            let normal = (r.at(x) - origin).unit();
 
-            let u: f32 = (f32::atan2(-point.z, point.x) + std::f32::consts::PI) * std::f32::consts::FRAC_1_PI * 0.5;
-            let v: f32 = 1.0 - (std::f32::consts::FRAC_1_PI * f32::acos( -point.y));
+            let u: f32 = (f32::atan2(-normal.z, normal.x) + std::f32::consts::PI) * std::f32::consts::FRAC_1_PI * 0.5;
+            let v: f32 = 1.0 - (std::f32::consts::FRAC_1_PI * f32::acos( -normal.y));
 
             debug_assert!(u <= 1.0 && v >= 0.0, "U too big");
             debug_assert!(v <= 1.0 && v >= 0.0, "V too big");
@@ -466,10 +475,10 @@ impl Debug for Sphere {
 
             Hit{
                 t:x, 
-                normal:(r.at(x) - self.origin).unit(), 
-                point: point, 
+                normal:normal, 
+                point: r.at(x), 
                 mat: self.mat, 
-                col_mod: self.texture.color_at(tex_x, tex_y, point) * self.col_mod
+                col_mod: self.texture.color_at(tex_x, tex_y, normal) * self.col_mod
             }
         }
     }
