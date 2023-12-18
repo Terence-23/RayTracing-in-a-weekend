@@ -1,5 +1,5 @@
 use super::*;
-    use crate::objects::objects::materials::{SCATTER_M, METALLIC_M};
+    use crate::objects::materials::{SCATTER_M, METALLIC_M};
 
     #[test]
     fn serialize_test(){

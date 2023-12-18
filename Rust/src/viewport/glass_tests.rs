@@ -1,6 +1,6 @@
 use super::*;
     use crate::write_img::img_writer::write_img_f32;
-    use crate::objects::objects::materials::{EMPTY_M, SCATTER_M, METALLIC_M, FUZZY3_M, GLASS_M};
+    use crate::objects::materials::{EMPTY_M, SCATTER_M, METALLIC_M, FUZZY3_M, GLASS_M};
 
     const WIDTH: u64 = 10;
     const HEIGHT: u64 = 10;

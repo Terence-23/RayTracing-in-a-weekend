@@ -1,12 +1,12 @@
 use super::*;
 use crate::write_img::img_writer::write_img_f32;
-use crate::objects::objects::materials::{SCATTER_M, METALLIC_M, FUZZY3_M};
-use crate::texture::texture::ImageTexture;
+use crate::objects::materials::{SCATTER_M, METALLIC_M, FUZZY3_M};
+use crate::texture::texture::{ImageTexture, PerlinNoise};
 
 fn ray_color_d(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
     // eprintln!("D: {}", depth);
     if depth < 1 {
-        dbg!("recursion end");
+        // dbg!("recursion end");
         return Rgb([0.0, 0.0, 0.0]);
     }
     let mint = 0.0001;
@@ -71,11 +71,40 @@ fn reflection_test(){
         Sphere::new_with_texture(Vec3 {x: -1001.0, y: 0.0, z:  0.0}, 1000.0, None, Some(METALLIC_M), ImageTexture::from_path("assets/earthmap.jpg").expect("image not found")),
     };
     let scene = Scene::new(spheres);
-    let viewport = Viewport::new_from_res(400, 300, samples, 10, 2.0, Some(90.0), Some(Vec3 { x: 0.0, y: 0.0, z: 0.0 }), None, None, Some("texture test".to_string()), None);
+    let viewport = Viewport::new_from_res(400, 300, samples, 10, 2.0, Some(90.0), Some(Vec3 { x: 0.0, y: 0.0, z: 0.0 }), None, None, Some("Reflection test".to_string()), None);
 
     // let img =  async_render(Box::new(viewport), ray_color_d, Box::new(scene)).await; 
     let img = viewport.render(&ray_color_d, scene);
 
     write_img_f32(&img, "out/texture_reflection_test.png".to_string());
     }
-    
+
+#[test]
+fn noise_test(){
+    let samples = 100;
+    let spheres  = vec!{
+        Sphere::new(Vec3 {x: -1.0, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.8, 0.8, 0.8)), Some(METALLIC_M)),
+        Sphere::new(Vec3 {x: 1.0, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.8, 0.6, 0.2)), Some(METALLIC_M)),
+        Sphere::new_with_texture(Vec3 {x: 0.0, y: -100.5, z: -1.0,}, 100.0, Some(Vec3::new(1.0, 1.0, 1.0)), Some(SCATTER_M), ImageTexture::from_color_noise(Vec3{x:1.0, y: 1.0, z:1.0}.to_rgb(), 0.01)),
+        Sphere::new(Vec3 {x: 0.0, y: 0.0, z: -1.0,}, 0.5, Some(Vec3::new(0.8, 0.8, 0.0)), Some(SCATTER_M)),
+    };
+    let scene = Scene::new(spheres);
+    let viewport = Viewport::new_from_res(400, 225, samples, 10, 2.0, None, None, None, None, Some("Noise test".to_string()), None);
+
+    let img = viewport.render(&ray_color_d, scene);
+
+    write_img_f32(&img, "out/noise_test.png".to_string());
+
+}
+
+#[test]
+fn perlin_test(){
+
+    let noise = PerlinNoise::new();
+    for x in -3..3{
+        dbg!((x as f32) as isize & 255);
+        dbg!(noise.noise(Vec3{x: x as f32, y:0.0, z:0.0}));
+    }
+
+
+}

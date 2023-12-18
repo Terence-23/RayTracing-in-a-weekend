@@ -1,13 +1,15 @@
 mod objects;
 mod vec3;
+
+#[allow(dead_code,unused_imports)]
 mod viewport;
 mod write_img;
 mod texture;
 
 use image::Rgb;
-use objects::objects::{materials::*, Object, Sphere, NO_HIT};
+use objects::{materials::*, Object, Sphere, NO_HIT};
 use vec3::{ray::Ray, vec3::Vec3};
-use viewport::viewport::{Scene, Viewport, Img};
+use viewport::{Scene, Viewport, Img};
 use write_img::img_writer::write_img_f32;
 
 use tokio;
@@ -71,7 +73,7 @@ fn test_run(f_name:String, viewport: Viewport, ray_color: impl Fn(Ray, &Scene, u
 
         let rt = tokio::runtime::Runtime::new().unwrap();
         let future =
-            viewport::viewport::render_multi(viewport.to_owned(), ray_color, scene.to_owned());
+            viewport::render_multi(viewport.to_owned(), ray_color, scene.to_owned());
         let img = rt.block_on(future);
         write_img_f32(&img[0], f_name);
 
