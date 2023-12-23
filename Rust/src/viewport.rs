@@ -26,12 +26,12 @@ pub mod errors{
 
 use std::iter::zip;
 
-use crate::{vec3::{ray::Ray, vec3::Vec3}, objects::AABB};
+use crate::{vec3::{ray::Ray, vec3::Vec3}, objects::aabb::AABB};
 use image::Rgb;
 use indicatif::{ProgressBar, ProgressStyle};
 use rand::Rng;
 use json::JsonValue;
-use crate::objects::{NO_HIT, Sphere, Object};
+use crate::objects::{NO_HIT, sphere::Sphere, Object};
 
 pub type Img = Vec<Vec<Rgb<f32>>>;
 

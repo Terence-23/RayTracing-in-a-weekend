@@ -7,7 +7,7 @@ mod write_img;
 mod texture;
 
 use image::Rgb;
-use objects::{materials::*, Object, Sphere, NO_HIT};
+use objects::{materials::*, Object, sphere::Sphere, NO_HIT};
 use vec3::{ray::Ray, vec3::Vec3};
 use viewport::{Scene, Viewport, Img};
 use write_img::img_writer::write_img_f32;
