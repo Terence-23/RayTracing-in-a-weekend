@@ -69,53 +69,56 @@ pub mod texture {
     }
 
     impl PerlinNoise {
-        
-        fn trilinear_interp(c: [[[f32;2];2];2], u:f32, v:f32, w:f32) ->f32 {
+        fn trilinear_interp(c: [[[f32; 2]; 2]; 2], u: f32, v: f32, w: f32) -> f32 {
             let mut accum = 0.0;
-            for i in 0..2{
-                for j in 0..2usize{
-                    for k in 0..2usize{
-                        accum += (u * i as f32 + (1.0 - u) * (1-i) as f32)*
-                                (j as f32 * v + (1.0 - j as f32)*(1.0 - v))*
-                                (k as f32 * w + (1.0 - k as f32)*(1.0 - w))*
-                                c[i][j][k];
+            for i in 0..2 {
+                for j in 0..2usize {
+                    for k in 0..2usize {
+                        accum += (u * i as f32 + (1.0 - u) * (1 - i) as f32)
+                            * (j as f32 * v + (1.0 - j as f32) * (1.0 - v))
+                            * (k as f32 * w + (1.0 - k as f32) * (1.0 - w))
+                            * c[i][j][k];
                     }
                 }
             }
             return accum;
         }
-        fn perlin_interp( c: [[[Vec3;2];2];2], u: f32, v: f32, w: f32) -> f32 {
-            let uu = u*u*(3.0-2.0*u);
-            let vv = v*v*(3.0-2.0*v);
-            let ww = w*w*(3.0-2.0*w);
+        fn perlin_interp(c: [[[Vec3; 2]; 2]; 2], u: f32, v: f32, w: f32) -> f32 {
+            let uu = u * u * (3.0 - 2.0 * u);
+            let vv = v * v * (3.0 - 2.0 * v);
+            let ww = w * w * (3.0 - 2.0 * w);
             let mut accum = 0.0;
-    
-            for i in 0..2{
-                for j in 0..2{
+
+            for i in 0..2 {
+                for j in 0..2 {
                     for k in 0..2 {
                         let i = i as f32;
                         let j = j as f32;
                         let k = k as f32;
-                        let weight_v = Vec3::new(u-i, v-j, w-k);
-                        accum += (i*uu + (1.0-i)*(1.0-uu))
-                               * (j*vv + (1.0-j)*(1.0-vv))
-                               * (k*ww + (1.0-k)*(1.0-ww))
-                               * c[i as usize][j as usize][k as usize].dot(weight_v);
+                        let weight_v = Vec3::new(u - i, v - j, w - k);
+                        accum += (i * uu + (1.0 - i) * (1.0 - uu))
+                            * (j * vv + (1.0 - j) * (1.0 - vv))
+                            * (k * ww + (1.0 - k) * (1.0 - ww))
+                            * c[i as usize][j as usize][k as usize].dot(weight_v);
                     }
                 }
             }
-    
+
             return accum;
         }
 
         pub fn new() -> Self {
             let mut rng = thread_rng();
             let mut ran_float = [0.0; PERLIN_POINT_COUNT];
-            let mut ranvec = [Vec3{x:0.0, y:0.0, z:0.0}; PERLIN_POINT_COUNT];
+            let mut ranvec = [Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            }; PERLIN_POINT_COUNT];
             let between = Uniform::new(0.0f32, 1.0);
 
             for i in 0..PERLIN_POINT_COUNT {
-                ranvec[i] = Vec3::random(-1.0,1.0).unit();
+                ranvec[i] = Vec3::random(-1.0, 1.0).unit();
             }
 
             for i in 0..PERLIN_POINT_COUNT {
@@ -144,12 +147,11 @@ pub mod texture {
             }
             p
         }
-        pub fn value(&self, p: Vec3) -> f32{
+        pub fn value(&self, p: Vec3) -> f32 {
             (1.0 + self.noise(p)) * 0.5
         }
 
         pub fn noise(&self, p: Vec3) -> f32 {
-
             let u = p.x - p.x.floor();
             let v = p.y - p.y.floor();
             let w = p.z - p.z.floor();
@@ -157,36 +159,38 @@ pub mod texture {
             let i = p.x.floor() as isize;
             let j = p.y.floor() as isize;
             let k = p.z.floor() as isize;
-            let mut c = [[[Vec3{x:0.0, y:0.0, z:0.0};2];2];2];
+            let mut c = [[[Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            }; 2]; 2]; 2];
 
-            for di in 0..2isize{
-                for dj in 0..2isize{
-                    for dk in 0..2isize{
-                        c[di as usize][dj as usize][dk as usize] = self.ranvec[
-                            self.perm_x[((i+di) & 255) as usize] ^
-                            self.perm_y[((j+dj) & 255) as usize] ^
-                            self.perm_z[((k+dk) & 255) as usize]
-                        ];
+            for di in 0..2isize {
+                for dj in 0..2isize {
+                    for dk in 0..2isize {
+                        c[di as usize][dj as usize][dk as usize] = self.ranvec[self.perm_x
+                            [((i + di) & 255) as usize]
+                            ^ self.perm_y[((j + dj) & 255) as usize]
+                            ^ self.perm_z[((k + dk) & 255) as usize]];
                     }
                 }
             }
             return Self::perlin_interp(c, u, v, w);
         }
-        
-        pub fn turb(&self, p: Vec3, depth:usize)->f32{
+
+        pub fn turb(&self, p: Vec3, depth: usize) -> f32 {
             let mut accum: f32 = 0.0;
             let mut temp_p = p;
             let mut weight = 1.0;
-    
+
             for _ in 0..depth {
                 accum += weight * self.noise(temp_p);
                 weight *= 0.5;
                 temp_p *= 2.0;
             }
-    
+
             return accum.abs();
         }
-
     }
 
     impl ImageTexture {
@@ -220,7 +224,7 @@ pub mod texture {
                 noise_scale: 1.0,
             })
         }
-        
+
         pub fn new_with_noise(img: Vec<Vec3>, width: usize, height: usize, scale: f32) -> Self {
             Self {
                 row: width,
@@ -251,11 +255,10 @@ pub mod texture {
                 noise_scale: scale,
             })
         }
-        
     }
     impl Texture for ImageTexture {
         fn color_at(&self, x: usize, y: usize, p: Vec3) -> Vec3 {
-            let noise_mult = match &self.noise{
+            let noise_mult = match &self.noise {
                 Some(n) => n.noise(p / self.noise_scale),
                 None => 1.0,
             };
@@ -272,4 +275,3 @@ pub mod texture {
         }
     }
 }
-
