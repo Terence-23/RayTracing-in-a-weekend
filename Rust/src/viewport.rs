@@ -25,6 +25,8 @@ pub mod errors {
     }
 }
 
+pub mod ray_color;
+
 use std::iter::zip;
 
 use crate::objects::quad::Quad;
@@ -78,6 +80,7 @@ pub struct Scene {
     pub aabb: AABB,
     pub quads: Vec<Quad>,
     pub qaabb: QuadAABB,
+    pub background_color: Vec3,
 }
 impl Scene {
     pub fn new_sphere(spheres: Vec<Sphere>) -> Scene {
@@ -86,6 +89,11 @@ impl Scene {
             aabb: AABB::new(spheres),
             quads: vec![],
             qaabb: QuadAABB::empty(),
+            background_color: Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
         }
     }
     pub fn new_quad(quads: Vec<Quad>) -> Scene {
@@ -94,6 +102,11 @@ impl Scene {
             aabb: AABB::empty(),
             quads: quads.to_owned(),
             qaabb: QuadAABB::new(quads),
+            background_color: Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
         }
     }
     pub fn new(spheres: Vec<Sphere>, quads: Vec<Quad>) -> Self {
@@ -102,6 +115,11 @@ impl Scene {
             aabb: AABB::new(spheres),
             quads: quads.to_owned(),
             qaabb: QuadAABB::new(quads),
+            background_color: Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
         }
     }
     pub fn collision_normal(&self, r: Ray, mint: f32, maxt: f32) -> Hit {
@@ -574,6 +592,7 @@ mod tests {
         write_img_f32(&img, "out/viewport_object.png".to_string());
     }
 }
+
 #[cfg(test)]
 mod camera_tests;
 #[cfg(test)]

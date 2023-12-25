@@ -7,7 +7,7 @@ mod viewport;
 mod write_img;
 
 use image::Rgb;
-use objects::{materials::*, sphere::Sphere, Object, NO_HIT};
+use objects::{materials::*, sphere::Sphere, NO_HIT};
 use vec3::{ray::Ray, vec3::Vec3};
 use viewport::{Img, Scene, Viewport};
 use write_img::img_writer::write_img_f32;
@@ -32,7 +32,7 @@ fn ray_color_d(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
         } else {
             true
         };
-        let mut next = hit.mat.on_hit(hit, r);
+        let (mut next, _) = hit.mat.on_hit(hit, r);
         if next.direction.close_to_zero() {
             next.direction = if front { hit.normal } else { hit.normal * -1.0 };
         }

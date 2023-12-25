@@ -1,4 +1,7 @@
-use super::{materials::Material, Hit, Object};
+use super::{
+    materials::{Material, EMPTY_M},
+    Hit, Object,
+};
 use crate::{
     objects::NO_HIT,
     texture::texture::{ImageTexture, Texture},
@@ -156,11 +159,7 @@ impl Sphere {
             },
             mat: match mat {
                 Some(n) => n,
-                None => Material {
-                    metallicness: 0.0,
-                    opacity: 0.0,
-                    ir: 1.0,
-                },
+                None => EMPTY_M,
             },
             velocity: Vec3 {
                 x: 0.0,
@@ -189,11 +188,7 @@ impl Sphere {
             },
             mat: match mat {
                 Some(n) => n,
-                None => Material {
-                    metallicness: 0.0,
-                    opacity: 0.0,
-                    ir: 1.0,
-                },
+                None => EMPTY_M,
             },
             velocity,
             texture: ImageTexture::from_color(match col_mod {
@@ -218,11 +213,7 @@ impl Sphere {
             },
             mat: match mat {
                 Some(n) => n,
-                None => Material {
-                    metallicness: 0.0,
-                    opacity: 0.0,
-                    ir: 1.0,
-                },
+                None => EMPTY_M,
             },
             velocity: Vec3 {
                 x: 0.0,
@@ -249,11 +240,7 @@ impl Sphere {
             },
             mat: match mat {
                 Some(n) => n,
-                None => Material {
-                    metallicness: 0.0,
-                    opacity: 0.0,
-                    ir: 1.0,
-                },
+                None => EMPTY_M,
             },
             velocity: velocity,
             texture: tex,

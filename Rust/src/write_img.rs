@@ -9,9 +9,9 @@ pub mod img_writer {
         for (x, y, pix) in img.enumerate_pixels_mut() {
             let rgb = arr[y as usize][x as usize];
             *pix = Rgb([
-                (rgb.0[0] * 255.0).round() as u8,
-                (rgb.0[1] * 255.0).round() as u8,
-                (rgb.0[2] * 255.0).round() as u8,
+                (rgb.0[0] * 255.0).clamp(0.0, 255.0).round() as u8,
+                (rgb.0[1] * 255.0).clamp(0.0, 255.0).round() as u8,
+                (rgb.0[2] * 255.0).clamp(0.0, 255.0).round() as u8,
             ]);
         }
 

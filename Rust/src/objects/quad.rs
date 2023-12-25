@@ -37,13 +37,13 @@ impl Object for Quad {
     fn collision_normal(&self, r: crate::vec3::ray::Ray, mint: f32, maxt: f32) -> super::Hit {
         let denominator = self.normal.dot(r.direction);
         if denominator.abs() <= 1e-8 {
-            eprintln!("parallel");
+            // eprintln!("parallel");
             return NO_HIT;
         }
         let t = (self.d - self.normal.dot(r.origin)) / denominator;
         if t < mint || t > maxt {
-            eprintln!("Out of range");
-            dbg!(t);
+            // eprintln!("Out of range");
+            // dbg!(t);
             // dbg!(r);
             // dbg!(self);
             return NO_HIT;
@@ -111,10 +111,7 @@ mod tests {
     use image::Rgb;
 
     use crate::{
-        objects::{
-            materials::{METALLIC_M, SCATTER_M},
-            sphere::Sphere,
-        },
+        objects::{materials::SCATTER_M, sphere::Sphere},
         vec3::ray::Ray,
         viewport::{Scene, Viewport},
         write_img::img_writer::write_img_f32,
@@ -138,7 +135,7 @@ mod tests {
             } else {
                 true
             };
-            let mut next = hit.mat.on_hit(hit, r);
+            let (mut next, _) = hit.mat.on_hit(hit, r);
             if next.direction.close_to_zero() {
                 next.direction = if front { hit.normal } else { hit.normal * -1.0 };
             }
