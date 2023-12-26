@@ -6,6 +6,8 @@ use json::JsonValue;
 
 pub mod aabb;
 #[allow(dead_code)]
+pub mod instance;
+#[allow(dead_code)]
 pub mod materials;
 pub mod quad;
 pub mod sphere;
@@ -93,11 +95,27 @@ impl Add for Interval {
         }
     }
 }
+impl Add<f32> for Interval {
+    type Output = Interval;
+
+    fn add(self, rhs: f32) -> Self::Output {
+        Interval {
+            min: self.min + rhs,
+            max: self.max + rhs,
+        }
+    }
+}
 impl Interval {
     pub fn new(x1: f32, x2: f32) -> Self {
         Self {
             min: minf(x1, x2),
             max: maxf(x1, x2),
+        }
+    }
+    pub fn pad(&self, v: f32) -> Self {
+        Self {
+            min: self.min - v,
+            max: self.max + v,
         }
     }
 

@@ -460,7 +460,7 @@ mod tests {
             ),
         ];
         // let scene = Scene::new(spheres, quads.to_owned());
-        let scene = Scene::new(spheres, quads);
+        let scene = Scene::new(spheres, quads, vec![]);
         let viewport = Viewport::new_from_res(
             400,
             400,

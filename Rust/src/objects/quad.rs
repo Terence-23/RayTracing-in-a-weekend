@@ -359,7 +359,7 @@ mod tests {
             },
             ImageTexture::from_color(Rgb([0.20, 1.0, 0.20])),
         )];
-        let scene = Scene::new(spheres, quads);
+        let scene = Scene::new(spheres, quads, vec![]);
         let samples = 100;
         let viewport = Viewport::new_from_res(
             200,

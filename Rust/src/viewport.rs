@@ -29,6 +29,8 @@ pub mod ray_color;
 
 use std::iter::zip;
 
+use crate::objects::aabb::IAABB;
+use crate::objects::instance::Instance;
 use crate::objects::quad::Quad;
 use crate::objects::{sphere::Sphere, Object, NO_HIT};
 use crate::objects::{Hit, Interval};
@@ -80,6 +82,8 @@ pub struct Scene {
     pub aabb: AABB,
     pub quads: Vec<Quad>,
     pub qaabb: QuadAABB,
+    pub instances: Vec<Instance>,
+    pub iaabb: IAABB,
     pub background_color: Vec3,
 }
 impl Scene {
@@ -94,6 +98,8 @@ impl Scene {
                 y: 0.0,
                 z: 0.0,
             },
+            instances: vec![],
+            iaabb: IAABB::empty(),
         }
     }
     pub fn new_quad(quads: Vec<Quad>) -> Scene {
@@ -107,14 +113,19 @@ impl Scene {
                 y: 0.0,
                 z: 0.0,
             },
+            instances: vec![],
+            iaabb: IAABB::empty(),
         }
     }
-    pub fn new(spheres: Vec<Sphere>, quads: Vec<Quad>) -> Self {
+    pub fn new(spheres: Vec<Sphere>, quads: Vec<Quad>, instances: Vec<Instance>) -> Self {
         Scene {
             spheres: spheres.clone(),
             aabb: AABB::new(spheres),
             quads: quads.to_owned(),
             qaabb: QuadAABB::new(quads),
+            instances: instances.to_owned(),
+            iaabb: IAABB::new(instances),
+
             background_color: Vec3 {
                 x: 0.0,
                 y: 0.0,
