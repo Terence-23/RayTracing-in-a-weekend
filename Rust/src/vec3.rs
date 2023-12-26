@@ -152,6 +152,27 @@ pub mod vec3 {
     }
 
     impl Vec3 {
+        pub fn rotated(self, rot: Self) -> Self {
+            // alfa
+            let asin = rot.x.sin();
+            let acos = rot.x.cos();
+            //beta
+            let bsin = rot.y.sin();
+            let bcos = rot.y.cos();
+            //gamma
+            let csin = rot.z.sin();
+            let ccos = rot.z.cos();
+
+            Self {
+                x: self.x * bcos * ccos
+                    + self.y * (asin * bsin * ccos - asin * ccos)
+                    + self.z * (acos * bsin * ccos + asin * csin),
+                y: self.x * bcos * csin
+                    + self.y * (asin * bsin * csin + acos * ccos)
+                    + self.z * (acos * bsin * csin - asin * ccos),
+                z: self.x * -bsin + self.y * asin * bcos + self.z * acos * bcos,
+            }
+        }
         pub fn new(x: f32, y: f32, z: f32) -> Self {
             Self { x, y, z }
         }
@@ -324,6 +345,49 @@ pub mod ray {
             pb.finish_with_message("Writing to disk");
 
             write_img_f32(&img, "out/viewport_test.png".to_string());
+        }
+
+        #[test]
+        pub fn rotation_tests() {
+            const PI: f32 = std::f32::consts::PI;
+            let vec = Vec3::new(1.0, 0.0, 0.0);
+
+            let rot1 = Vec3 {
+                x: PI / 6.0,
+                y: 0.0,
+                z: 0.0,
+            };
+
+            assert_eq!(
+                vec.rotated(rot1),
+                Vec3 {
+                    x: rot1.y.cos() * rot1.z.cos(),
+                    y: 0.0,
+                    z: -0.0
+                }
+            );
+            let rot2 = Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: PI / 6.0,
+            };
+            let vec2 = Vec3::new(1.0, 0.0, 1.0);
+            assert_eq!(
+                vec.rotated(rot2),
+                Vec3 {
+                    x: rot2.z.cos(),
+                    y: rot2.z.sin(),
+                    z: 0.0
+                }
+            );
+            assert_eq!(
+                vec2.rotated(rot2),
+                Vec3 {
+                    x: rot2.z.cos(),
+                    y: rot2.z.sin(),
+                    z: 1.0
+                }
+            )
         }
     }
 }

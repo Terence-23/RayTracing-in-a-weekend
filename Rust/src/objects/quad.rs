@@ -1,4 +1,4 @@
-use super::{materials::Material, Object, NO_HIT};
+use super::{materials::Material, Hit, Object};
 use crate::{
     texture::texture::{ImageTexture, Texture},
     vec3::vec3::Vec3,
@@ -31,14 +31,14 @@ impl PartialEq for Quad {
 
 impl Object for Quad {
     fn collide(&self, r: crate::vec3::ray::Ray) -> bool {
-        self.collision_normal(r, 0.0001, 10000.0) != NO_HIT
+        self.collision_normal(r, 0.0001, 10000.0) != None
     }
 
-    fn collision_normal(&self, r: crate::vec3::ray::Ray, mint: f32, maxt: f32) -> super::Hit {
+    fn collision_normal(&self, r: crate::vec3::ray::Ray, mint: f32, maxt: f32) -> Option<Hit> {
         let denominator = self.normal.dot(r.direction);
         if denominator.abs() <= 1e-8 {
             // eprintln!("parallel");
-            return NO_HIT;
+            return None;
         }
         let t = (self.d - self.normal.dot(r.origin)) / denominator;
         if t < mint || t > maxt {
@@ -46,7 +46,7 @@ impl Object for Quad {
             // dbg!(t);
             // dbg!(r);
             // dbg!(self);
-            return NO_HIT;
+            return None;
         }
         let point = r.at(t);
         let planar = point - self.origin;
@@ -56,10 +56,10 @@ impl Object for Quad {
         if alfa < 0.0 || alfa > 1.0 || beta < 0.0 || beta > 1.0 {
             // eprintln!("Out of quad");
             // eprintln!("alfa: {alfa}, beta: {beta}");
-            return NO_HIT;
+            return None;
         }
 
-        super::Hit {
+        Some(super::Hit {
             t: t,
             normal: self.normal,
             point: point,
@@ -77,7 +77,7 @@ impl Object for Quad {
                 point,
             ),
             mat: self.mat,
-        }
+        })
     }
 }
 #[allow(dead_code)]
@@ -127,7 +127,7 @@ mod tests {
 
         let hit = scene.collision_normal(r, mint, maxt);
 
-        if hit != NO_HIT {
+        if let Some(hit) = hit {
             // eprintln!("Hit: {:?}", hit );
             let cm = hit.col_mod;
             let front = if r.direction.dot(hit.normal) > 0.0 {
@@ -315,7 +315,7 @@ mod tests {
         );
         eprintln!("Running");
 
-        let img = viewport.render(&ray_color_d, scene);
+        let img = viewport.render(&ray_color_d, &scene);
 
         write_img_f32(&img, "out/quad_test.png".to_string());
     }
@@ -384,7 +384,7 @@ mod tests {
         );
         eprintln!("Running");
 
-        let img = viewport.render(&ray_color_d, scene);
+        let img = viewport.render(&ray_color_d, &scene);
 
         write_img_f32(&img, "out/simple_quad_test.png".to_string());
     }

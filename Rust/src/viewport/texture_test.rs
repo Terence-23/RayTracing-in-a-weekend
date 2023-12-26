@@ -14,7 +14,7 @@ fn ray_color_d(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
 
     let hit = scene.aabb.collision_normal(r, mint, maxt);
 
-    if hit != NO_HIT {
+    if let Some(hit) = hit {
         // eprintln!("Hit: {:?}", hit );
         let cm = hit.col_mod;
         let front = if r.direction.dot(hit.normal) > 0.0 {
@@ -134,7 +134,7 @@ fn reflection_test() {
     );
 
     // let img =  async_render(Box::new(viewport), ray_color_d, Box::new(scene)).await;
-    let img = viewport.render(&ray_color_d, scene);
+    let img = viewport.render(&ray_color_d, &scene);
 
     write_img_f32(&img, "out/texture_reflection_test.png".to_string());
 }
@@ -208,7 +208,7 @@ fn noise_test() {
         None,
     );
 
-    let img = viewport.render(&ray_color_d, scene);
+    let img = viewport.render(&ray_color_d, &scene);
 
     write_img_f32(&img, "out/noise_test.png".to_string());
 }

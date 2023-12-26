@@ -133,15 +133,16 @@ impl Scene {
             },
         }
     }
-    pub fn collision_normal(&self, r: Ray, mint: f32, maxt: f32) -> Hit {
-        let mut min_hit = NO_HIT;
+    pub fn collision_normal(&self, r: Ray, mint: f32, maxt: f32) -> Option<Hit> {
+        let mut min_hit = None;
         let s_hit = self.aabb.collision_normal(r, mint, maxt);
         let q_hit = self.qaabb.collision_normal(r, mint, maxt);
-        for i in vec![s_hit, q_hit] {
-            if i == NO_HIT {
+        let i_hit = self.iaabb.collision_normal(r, mint, maxt);
+        for i in vec![s_hit, q_hit, i_hit] {
+            if i == None {
                 continue;
             }
-            if min_hit == NO_HIT || min_hit > i {
+            if min_hit == None || min_hit > i {
                 min_hit = i;
             }
         }
@@ -416,7 +417,7 @@ impl Viewport {
         )
     }
 
-    pub fn render(&self, ray_color: &dyn Fn(Ray, &Scene, usize) -> Rgb<f32>, scene: Scene) -> Img {
+    pub fn render(&self, ray_color: &dyn Fn(Ray, &Scene, usize) -> Rgb<f32>, scene: &Scene) -> Img {
         let mut img: Img = Vec::with_capacity(self.height as usize);
         let pb = ProgressBar::new(self.height);
         pb.set_style(
@@ -516,10 +517,10 @@ mod tests {
                 .into_iter()
                 .map(|sp| sp.collision_normal(r, mint, maxt))
             {
-                if i == NO_HIT {
+                if i == None {
                     continue;
                 }
-                if min_hit == NO_HIT {
+                if min_hit == None {
                     min_hit = i;
                 } else if min_hit > i {
                     min_hit = i;
@@ -528,7 +529,7 @@ mod tests {
             min_hit
         };
 
-        if hit != NO_HIT {
+        if let Some(hit) = hit {
             let n = hit.normal;
             return Rgb([0.5 * (n.x + 1.0), 0.5 * (n.y + 1.0), 0.5 * (n.z + 1.0)]);
         }
@@ -598,7 +599,7 @@ mod tests {
             None,
         );
 
-        let img = viewport.render(&ray_color, scene);
+        let img = viewport.render(&ray_color, &scene);
 
         write_img_f32(&img, "out/viewport_object.png".to_string());
     }

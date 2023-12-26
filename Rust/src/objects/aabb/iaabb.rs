@@ -1,7 +1,7 @@
 use rand::random;
 
 use crate::{
-    objects::{instance::Instance, maxf, minf, Hit, Interval, Object, NO_HIT},
+    objects::{instance::Instance, maxf, minf, Hit, Interval, Object},
     vec3::ray::Ray,
 };
 
@@ -35,9 +35,9 @@ impl From<&Instance> for IAABB {
         let y = val.qaabb.y + val.saabb.y + val.gett().y;
         let z = val.qaabb.z + val.saabb.z + val.gett().z;
         Self {
-            x: x.pad((x.max - x.min) / 2.0),
-            y: y.pad((y.max - y.min) / 2.0),
-            z: z.pad((x.max - z.min) / 2.0),
+            x, //: x.pad((x.max - x.min) / 2.0),
+            y, //: y.pad((y.max - y.min) / 2.0),
+            z, //: z.pad((x.max - z.min) / 2.0),
             instances: vec![val.to_owned()],
             aabbs: vec![],
         }
@@ -116,23 +116,23 @@ impl Object for IAABB {
         min < max
     }
 
-    fn collision_normal(&self, r: Ray, mint: f32, maxt: f32) -> Hit {
+    fn collision_normal(&self, r: Ray, mint: f32, maxt: f32) -> Option<Hit> {
         if self.instances.is_empty() && self.aabbs.is_empty() {
             eprintln!("empty");
-            return NO_HIT;
+            return None;
         }
 
         let x_hit = match self.x.intersect(r.direction.x, r.origin.x) {
             Some(n) => n,
-            None => return NO_HIT,
+            None => return None,
         };
         let y_hit = match self.y.intersect(r.direction.y, r.origin.y) {
             Some(n) => n,
-            None => return NO_HIT,
+            None => return None,
         };
         let z_hit = match self.z.intersect(r.direction.z, r.origin.z) {
             Some(n) => n,
-            None => return NO_HIT,
+            None => return None,
         };
         let min = maxf(maxf(x_hit.min, y_hit.min), maxf(z_hit.min, mint));
         let max = minf(minf(x_hit.max, y_hit.max), minf(z_hit.max, maxt));
@@ -143,18 +143,18 @@ impl Object for IAABB {
             // dbg!(max);
             // dbg!(x_hit, y_hit, z_hit);
 
-            return NO_HIT;
+            return None;
         }
-        let mut min_hit = NO_HIT;
+        let mut min_hit = None;
         if self.aabbs.len() > 0 {
             for i in self.aabbs[..]
                 .into_iter()
                 .map(|aabb| aabb.collision_normal(r, mint, maxt))
             {
-                if i == NO_HIT {
+                if i == None {
                     continue;
                 }
-                if min_hit == NO_HIT || min_hit > i {
+                if min_hit == None || min_hit > i {
                     min_hit = i;
                 }
             }
@@ -164,10 +164,10 @@ impl Object for IAABB {
                 .into_iter()
                 .map(|sp| sp.collision_normal(r, mint, maxt))
             {
-                if i == NO_HIT {
+                if i == None {
                     continue;
                 }
-                if min_hit == NO_HIT || min_hit > i {
+                if min_hit == None || min_hit > i {
                     min_hit = i;
                 }
             }

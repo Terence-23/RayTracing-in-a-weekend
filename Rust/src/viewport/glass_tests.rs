@@ -19,17 +19,17 @@ fn ray_color(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
             .into_iter()
             .map(|sp| sp.collision_normal(r, mint, maxt))
         {
-            if i == NO_HIT {
+            if i == None {
                 continue;
             }
-            if min_hit == NO_HIT || min_hit > i {
+            if min_hit == None || min_hit > i {
                 min_hit = i;
             }
         }
         min_hit
     };
 
-    if hit != NO_HIT {
+    if let Some(hit) = hit {
         eprintln!("Hit");
         if hit.mat.metallicness != 1.0 {
             return Rgb([1.0, 1.0, 0.0]);

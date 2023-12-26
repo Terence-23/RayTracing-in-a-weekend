@@ -142,7 +142,7 @@ impl Interval {
 pub trait Object {
     fn collide(&self, r: Ray) -> bool;
 
-    fn collision_normal(&self, r: Ray, mint: f32, maxt: f32) -> Hit;
+    fn collision_normal(&self, r: Ray, mint: f32, maxt: f32) -> Option<Hit>;
 }
 
 #[cfg(test)]
@@ -201,8 +201,8 @@ mod tests {
             None,
         );
 
-        let hit = sphere.collision_normal(r, 0.0, 1000.0);
-        if hit != NO_HIT {
+        let hito = sphere.collision_normal(r, 0.0, 1000.0);
+        if let Some(hit) = hito {
             let n = hit.normal;
             return Rgb([0.5 * (n.x + 1.0), 0.5 * (n.y + 1.0), 0.5 * (n.z + 1.0)]);
         }

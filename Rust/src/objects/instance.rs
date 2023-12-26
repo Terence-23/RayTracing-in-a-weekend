@@ -9,7 +9,7 @@ use super::{
     maxf, minf,
     quad::Quad,
     sphere::Sphere,
-    Object, NO_HIT,
+    Object,
 };
 #[derive(Debug, Clone)]
 pub struct Instance {
@@ -179,28 +179,311 @@ impl Instance {
 
 impl Object for Instance {
     fn collide(&self, r: crate::vec3::ray::Ray) -> bool {
-        self.collision_normal(r, 0.0001, 10000.0) != NO_HIT
+        self.collision_normal(r, 0.0001, 10000.0) != None
     }
 
-    fn collision_normal(&self, r: crate::vec3::ray::Ray, mint: f32, maxt: f32) -> super::Hit {
+    fn collision_normal(
+        &self,
+        r: crate::vec3::ray::Ray,
+        mint: f32,
+        maxt: f32,
+    ) -> Option<super::Hit> {
         //change to local
         let r = Ray::new_with_time(r.origin - self.translation, r.direction, r.time);
 
         //check
-        let mut min_hit = NO_HIT;
+        let mut min_hit = None;
         let s_hit = self.saabb.collision_normal(r, mint, maxt);
         let q_hit = self.qaabb.collision_normal(r, mint, maxt);
         for i in vec![s_hit, q_hit] {
-            if i == NO_HIT {
+            if i == None {
                 continue;
             }
-            if min_hit == NO_HIT || min_hit > i {
+            if min_hit == None || min_hit > i {
                 min_hit = i;
             }
         }
 
         // change to global
-        min_hit.point += self.translation;
-        min_hit
+
+        // if min_hit != None {
+        //     dbg!(min_hit);
+        // } else {
+        //     eprintln!("NO_HIT");
+        // }
+        if let Some(mut hit) = min_hit {
+            hit.point += self.translation;
+            return Some(hit);
+        }
+        return min_hit;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use image::Rgb;
+
+    use crate::{
+        objects::{
+            instance::Instance,
+            materials::{Material, METALLIC_M, SCATTER_M},
+            quad::Quad,
+            sphere::Sphere,
+        },
+        texture::texture::ImageTexture,
+        vec3::vec3::Vec3,
+        viewport::{async_render, ray_color::ray_color_bg_color, Scene, Viewport},
+        write_img::img_writer::write_img_f32,
+    };
+
+    #[test]
+    fn box_test() {
+        let samples = 100;
+        let _spheres = vec![Sphere::new(
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 2.0,
+            },
+            0.4,
+            Some(Vec3 {
+                x: 1.0,
+                y: 1.0,
+                z: 1.0,
+            }),
+            Some(Material::new_emmiting(
+                1.0,
+                0.0,
+                0.0,
+                Vec3 {
+                    x: 2.0,
+                    y: 0.5,
+                    z: 2.0,
+                },
+            )),
+        )];
+
+        let quads = vec![
+            //Red
+            Quad::new(
+                Vec3 {
+                    x: -2.0,
+                    y: -2.0,
+                    z: 5.0,
+                },
+                Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: -4.0,
+                },
+                Vec3 {
+                    x: 0.0,
+                    y: 4.0,
+                    z: 0.0,
+                },
+                SCATTER_M,
+                Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                ImageTexture::from_color(Rgb { 0: [1.0, 0.2, 0.2] }),
+            ),
+            //Light
+            // Quad::new(
+            //     Vec3 {
+            //         x: -0.5,
+            //         y: -0.5,
+            //         z: 1.001,
+            //     },
+            //     Vec3 {
+            //         x: 1.0,
+            //         y: 0.0,
+            //         z: 0.0,
+            //     },
+            //     Vec3 {
+            //         x: 0.0,
+            //         y: 1.0,
+            //         z: 0.0,
+            //     },
+            //     Material::new_emmiting(
+            //         0.0,
+            //         0.0,
+            //         1.0,
+            //         Vec3 {
+            //             x: 4.0,
+            //             y: 2.0,
+            //             z: 4.0,
+            //         },
+            //     ),
+            //     Vec3 {
+            //         x: 0.0,
+            //         y: 0.0,
+            //         z: 0.0,
+            //     },
+            //     ImageTexture::from_color(Rgb { 0: [1.0, 1.0, 1.0] }),
+            // ),
+            //Blue
+            Quad::new(
+                Vec3 {
+                    x: 2.0,
+                    y: -2.0,
+                    z: 1.0,
+                },
+                Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 4.0,
+                },
+                Vec3 {
+                    x: 0.0,
+                    y: 4.0,
+                    z: 0.0,
+                },
+                SCATTER_M,
+                Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                ImageTexture::from_color(Rgb { 0: [0.2, 0.2, 1.0] }),
+            ),
+            //Orange
+            Quad::new(
+                Vec3 {
+                    x: -2.0,
+                    y: 2.0,
+                    z: 1.0,
+                },
+                Vec3 {
+                    x: 4.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 4.0,
+                },
+                SCATTER_M,
+                Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                ImageTexture::from_color(Rgb { 0: [1.0, 0.5, 0.0] }),
+            ),
+            //Teal
+            Quad::new(
+                Vec3 {
+                    x: -2.0,
+                    y: -2.0,
+                    z: 5.0,
+                },
+                Vec3 {
+                    x: 4.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: -4.0,
+                },
+                SCATTER_M,
+                Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                ImageTexture::from_color(Rgb { 0: [0.2, 0.8, 0.8] }),
+            ),
+            //Green
+            Quad::new(
+                Vec3 {
+                    x: -2.0,
+                    y: -2.0,
+                    z: 1.0,
+                },
+                Vec3 {
+                    x: 4.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                Vec3 {
+                    x: 0.0,
+                    y: 4.0,
+                    z: 0.0,
+                },
+                Material::new_emmiting(
+                    0.0,
+                    0.0,
+                    1.0,
+                    Vec3 {
+                        x: 4.0,
+                        y: 4.0,
+                        z: 4.0,
+                    },
+                ),
+                Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                ImageTexture::from_color(Rgb { 0: [0.2, 1.0, 0.2] }),
+            ),
+        ];
+        // let scene = Scene::new(spheres, quads.to_owned());
+        let mut instance = Instance::new_box(
+            Vec3::new(-2.0, -2.0, 1.0),
+            Vec3::new(-1.5, -1.5, 1.5),
+            ImageTexture::from_color(Vec3::new(1.0, 1.0, 1.0).to_rgb()),
+            METALLIC_M,
+        );
+        let scene = Scene::new(vec![], quads.to_owned(), vec![instance.to_owned()]);
+        instance.translate(Vec3 {
+            x: 1.0,
+            y: 1.0,
+            z: 0.0,
+        });
+        let scene2 = Scene::new(vec![], quads.to_owned(), vec![instance.to_owned()]);
+        let viewport = Viewport::new_from_res(
+            400,
+            400,
+            samples,
+            20,
+            2.0,
+            Some(90.0),
+            Some(Vec3 {
+                x: 0.0,
+                y: -0.0,
+                z: 4.0,
+            }),
+            Some(Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: -1.0,
+            }),
+            None,
+            Some("Instance test".to_string()),
+            None,
+        );
+        eprintln!("Running");
+
+        let runtime = tokio::runtime::Builder::new_multi_thread().build().unwrap();
+        // let img = runtime.block_on(async_render(
+        //     Box::new(viewport.clone()),
+        //     &ray_color_bg_color,
+        //     Box::new(scene),
+        // ));
+        // write_img_f32(&img, "out/instance_test.png".to_string());
+
+        // let img = runtime.block_on(async_render(
+        //     Box::new(viewport.clone()),
+        //     &ray_color_bg_color,
+        //     Box::new(scene2),
+        // ));
+        let img = viewport.render(&ray_color_bg_color, &scene2);
+        write_img_f32(&img, "out/instance_test2.png".to_string());
     }
 }

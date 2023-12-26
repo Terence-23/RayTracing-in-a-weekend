@@ -3,7 +3,6 @@ use super::{
     Hit, Object,
 };
 use crate::{
-    objects::NO_HIT,
     texture::texture::{ImageTexture, Texture},
     vec3::{ray::Ray, vec3::Vec3},
 };
@@ -97,7 +96,7 @@ impl Object for Sphere {
         let c = oc.dot(oc) - self.radius * self.radius;
         return b * b - (4.0 * a * c) > 0.0;
     }
-    fn collision_normal(&self, r: Ray, mint: f32, maxt: f32) -> Hit {
+    fn collision_normal(&self, r: Ray, mint: f32, maxt: f32) -> Option<Hit> {
         let origin = self.origin + self.velocity * r.time;
         let oc = r.origin - origin;
         let a = r.direction.dot(r.direction);
@@ -106,7 +105,7 @@ impl Object for Sphere {
         let d = b * b - a * c;
 
         if d < 0.0 {
-            return NO_HIT;
+            return None;
         }
 
         let mut x = (-b - d.sqrt()) / a;
@@ -121,7 +120,7 @@ impl Object for Sphere {
 
         if x < mint || x > maxt {
             // dbg!(x);
-            return NO_HIT;
+            return None;
         }
         // println!("mint: {}", mint);
         debug_assert_ne!(x, 0.0);
@@ -138,13 +137,13 @@ impl Object for Sphere {
         let tex_x = (u * (self.texture.row - 1) as f32).floor() as usize;
         let tex_y = (v * (self.texture.col - 1) as f32).floor() as usize;
 
-        Hit {
+        Some(Hit {
             t: x,
             normal: normal,
             point: r.at(x),
             mat: self.mat,
             col_mod: self.texture.color_at(tex_x, tex_y, r.at(x)) * self.col_mod,
-        }
+        })
     }
 }
 #[allow(dead_code)]

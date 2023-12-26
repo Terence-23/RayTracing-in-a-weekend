@@ -7,7 +7,7 @@ use crate::{
 
 use super::Scene;
 
-fn ray_color_gradient(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
+pub fn ray_color_gradient(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
     // eprintln!("D: {}", depth);
     if depth < 1 {
         return Rgb([0.0, 0.0, 0.0]);
@@ -17,7 +17,7 @@ fn ray_color_gradient(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
 
     let hit = scene.collision_normal(r, mint, maxt);
 
-    if hit != NO_HIT {
+    if let Some(hit) = hit {
         // eprintln!("Hit: {:?}", hit );
         let cm = hit.col_mod;
         let front = if r.direction.dot(hit.normal) > 0.0 {
@@ -38,7 +38,7 @@ fn ray_color_gradient(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
     return Rgb([(1.0 - t) + t * 0.5, (1 as f32 - t) + t * 0.7, 1.0]);
 }
 
-fn ray_color_bg_color(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
+pub fn ray_color_bg_color(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
     // eprintln!("D: {}", depth);
     if depth < 1 {
         return Rgb([0.0, 0.0, 0.0]);
@@ -48,7 +48,7 @@ fn ray_color_bg_color(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
 
     let hit = scene.collision_normal(r, mint, maxt);
 
-    if hit != NO_HIT {
+    if let Some(hit) = hit {
         // eprintln!("Hit: {:?}", hit );
         let cm = hit.col_mod;
         let front = if r.direction.dot(hit.normal) > 0.0 {
@@ -258,7 +258,7 @@ mod tests {
         );
         eprintln!("Running");
 
-        let img = viewport.render(&ray_color_bg_color, scene);
+        let img = viewport.render(&ray_color_bg_color, &scene);
 
         write_img_f32(&img, "out/light_test.png".to_string());
     }

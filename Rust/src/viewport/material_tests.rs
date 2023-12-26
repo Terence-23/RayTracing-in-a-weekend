@@ -16,17 +16,17 @@ fn ray_color_d(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
             .into_iter()
             .map(|sp| sp.collision_normal(r, mint, maxt))
         {
-            if i == NO_HIT {
+            if i == None {
                 continue;
             }
-            if min_hit == NO_HIT || min_hit > i {
+            if min_hit == None || min_hit > i {
                 min_hit = i;
             }
         }
         min_hit
     };
 
-    if hit != NO_HIT {
+    if let Some(hit) = hit {
         // eprintln!("Hit: {:?}", hit );
         let cm = hit.col_mod;
         let front = if r.direction.dot(hit.normal) > 0.0 {
@@ -97,7 +97,7 @@ pub fn diffuse_test() {
         None,
     );
 
-    let img = viewport.render(&ray_color_d, scene);
+    let img = viewport.render(&ray_color_d, &scene);
 
     write_img_f32(&img, "out/diffuse_test.png".to_string());
 }
@@ -161,7 +161,7 @@ pub fn metal_test() {
         None,
     );
 
-    let img = viewport.render(&ray_color_d, scene);
+    let img = viewport.render(&ray_color_d, &scene);
 
     write_img_f32(&img, "out/metal_test.png".to_string());
 }
@@ -207,7 +207,7 @@ pub fn glass_test_controll() {
         None,
     );
 
-    let img = viewport.render(&ray_color_d, scene);
+    let img = viewport.render(&ray_color_d, &scene);
 
     write_img_f32(&img, "out/glass_test_c.png".to_string());
 }
@@ -263,7 +263,7 @@ pub fn glass_test() {
         None,
     );
 
-    let img = viewport.render(&ray_color_d, scene);
+    let img = viewport.render(&ray_color_d, &scene);
 
     write_img_f32(&img, "out/glass_test.png".to_string());
 }

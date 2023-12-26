@@ -22,17 +22,17 @@ fn ray_color_d(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
             .into_iter()
             .map(|sp| sp.collision_normal(r, mint, maxt))
         {
-            if i == NO_HIT {
+            if i == None {
                 continue;
             }
-            if min_hit == NO_HIT || min_hit > i {
+            if min_hit == None || min_hit > i {
                 min_hit = i;
             }
         }
         min_hit
     };
 
-    if hit != NO_HIT {
+    if let Some(hit) = hit {
         // eprintln!("Hit: {:?}", hit );
         let cm = hit.col_mod;
         let front = if r.direction.dot(hit.normal) > 0.0 {
@@ -104,7 +104,7 @@ fn default_settings() {
         None,
     );
 
-    let img = viewport.render(&ray_color_d, scene());
+    let img = viewport.render(&ray_color_d, &scene());
 
     write_img_f32(&img, "out/camera_default_test.png".to_string());
 }
@@ -124,7 +124,7 @@ fn fov_120() {
         None,
     );
 
-    let img = viewport.render(&ray_color_d, scene());
+    let img = viewport.render(&ray_color_d, &scene());
 
     write_img_f32(&img, "out/camera_fov_120_test.png".to_string());
 }
@@ -148,7 +148,7 @@ fn upside_down() {
         None,
     );
 
-    let img = viewport.render(&ray_color_d, scene());
+    let img = viewport.render(&ray_color_d, &scene());
 
     write_img_f32(&img, "out/camera_upside_down_test.png".to_string());
 }
@@ -172,7 +172,7 @@ fn depth_of_field() {
         Some(0.015),
     );
 
-    let img = viewport.render(&ray_color_d, scene());
+    let img = viewport.render(&ray_color_d, &scene());
 
     write_img_f32(&img, "out/camera_depth_of_field_test.png".to_string());
 }

@@ -7,7 +7,7 @@ mod viewport;
 mod write_img;
 
 use image::Rgb;
-use objects::{materials::*, sphere::Sphere, NO_HIT};
+use objects::{materials::*, sphere::Sphere};
 use vec3::{ray::Ray, vec3::Vec3};
 use viewport::{Img, Scene, Viewport};
 use write_img::img_writer::write_img_f32;
@@ -24,7 +24,7 @@ fn ray_color_d(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
 
     let hit = scene.collision_normal(r, mint, maxt);
 
-    if hit != NO_HIT {
+    if let Some(hit) = hit {
         // eprintln!("Hit: {:?}", hit );
         let cm = hit.col_mod;
         let front = if r.direction.dot(hit.normal) > 0.0 {
