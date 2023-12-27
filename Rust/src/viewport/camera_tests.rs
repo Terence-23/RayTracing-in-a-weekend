@@ -165,7 +165,7 @@ fn depth_of_field() {
         None,
         Some(Vec3 {
             x: 0.0,
-            y: -1.0,
+            y: 1.0,
             z: 0.0,
         }),
         Some("Camera: depth of field test".to_string()),

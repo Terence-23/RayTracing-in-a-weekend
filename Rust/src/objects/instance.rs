@@ -1,3 +1,5 @@
+use std::iter::zip;
+
 use crate::{
     texture::texture::ImageTexture,
     vec3::{ray::Ray, vec3::Vec3},
@@ -20,6 +22,32 @@ pub struct Instance {
 
     translation: Vec3,
     rotation: Vec3,
+}
+impl PartialEq for Instance {
+    fn eq(&self, other: &Self) -> bool {
+        if self.rotation != other.rotation || self.translation != other.translation {
+            eprintln!("diff rot/trans");
+            eprintln!(
+                "{:?}{:?}\n{:?}{:?}",
+                self.rotation, self.translation, other.rotation, self.translation
+            );
+            return false;
+        }
+        for (i, o) in zip(self.spheres.to_owned(), other.spheres.to_owned()) {
+            if i != o {
+                eprintln!("diff spheres");
+                return false;
+            }
+        }
+        for (i, o) in zip(self.quads.to_owned(), other.quads.to_owned()) {
+            if i != o {
+                eprintln!("diff quads");
+                return false;
+            }
+        }
+        eprintln!("Instance same");
+        return true;
+    }
 }
 
 impl Instance {
@@ -168,6 +196,9 @@ impl Instance {
     pub fn rotate(&mut self, rot: Vec3) {
         self.rotation += rot;
     }
+    pub fn getr(&self) -> Vec3 {
+        return self.rotation.to_owned();
+    }
 
     pub fn translate(&mut self, vec: Vec3) {
         self.translation += vec;
@@ -189,7 +220,8 @@ impl Object for Instance {
         maxt: f32,
     ) -> Option<super::Hit> {
         //change to local
-        let r = Ray::new_with_time(r.origin - self.translation, r.direction, r.time);
+        let r = Ray::new_with_time(r.origin - self.translation, r.direction, r.time)
+            .rotated(-self.rotation);
 
         //check
         let mut min_hit = None;
@@ -212,7 +244,10 @@ impl Object for Instance {
         //     eprintln!("NO_HIT");
         // }
         if let Some(mut hit) = min_hit {
+            hit.point.rotate(self.rotation);
             hit.point += self.translation;
+
+            hit.normal.rotate(self.rotation);
             return Some(hit);
         }
         return min_hit;
@@ -225,6 +260,7 @@ mod tests {
 
     use crate::{
         objects::{
+            aabb::IAABB,
             instance::Instance,
             materials::{Material, METALLIC_M, SCATTER_M},
             quad::Quad,
@@ -238,6 +274,7 @@ mod tests {
 
     #[test]
     fn box_test() {
+        const PI: f32 = std::f32::consts::PI;
         let samples = 100;
         let _spheres = vec![Sphere::new(
             Vec3 {
@@ -281,13 +318,15 @@ mod tests {
                     y: 4.0,
                     z: 0.0,
                 },
-                SCATTER_M,
+                METALLIC_M,
                 Vec3 {
                     x: 0.0,
                     y: 0.0,
                     z: 0.0,
                 },
-                ImageTexture::from_color(Rgb { 0: [1.0, 0.2, 0.2] }),
+                ImageTexture::from_color(Rgb {
+                    0: [0.85, 0.85, 0.85],
+                }),
             ),
             //Light
             // Quad::new(
@@ -435,18 +474,31 @@ mod tests {
         ];
         // let scene = Scene::new(spheres, quads.to_owned());
         let mut instance = Instance::new_box(
-            Vec3::new(-2.0, -2.0, 1.0),
-            Vec3::new(-1.5, -1.5, 1.5),
-            ImageTexture::from_color(Vec3::new(1.0, 1.0, 1.0).to_rgb()),
-            METALLIC_M,
+            Vec3::new(-0.5, -0.5, -0.5),
+            Vec3::new(0.5, 0.5, 0.5),
+            ImageTexture::from_color(Vec3::new(0.0, 0.5, 0.0).to_rgb()),
+            SCATTER_M,
         );
-        let scene = Scene::new(vec![], quads.to_owned(), vec![instance.to_owned()]);
         instance.translate(Vec3 {
-            x: 1.0,
-            y: 1.0,
+            x: -0.0,
+            y: -1.5,
+            z: 2.0,
+        });
+        let scene = Scene::new(vec![], quads.to_owned(), vec![instance.to_owned()]);
+        // instance.translate(Vec3 {
+        //     x: 1.0,
+        //     y: 1.0,
+        //     z: 0.0,
+        // });
+        instance.rotate(Vec3 {
+            x: 0.0,
+            y: PI / 4.0,
             z: 0.0,
         });
+        let aabb = IAABB::from(&instance);
+        dbg!(aabb.x, aabb.y, aabb.z);
         let scene2 = Scene::new(vec![], quads.to_owned(), vec![instance.to_owned()]);
+        // assert_eq!(scene, scene2);
         let viewport = Viewport::new_from_res(
             400,
             400,
@@ -457,7 +509,7 @@ mod tests {
             Some(Vec3 {
                 x: 0.0,
                 y: -0.0,
-                z: 4.0,
+                z: 7.0,
             }),
             Some(Vec3 {
                 x: 0.0,
@@ -471,19 +523,19 @@ mod tests {
         eprintln!("Running");
 
         let runtime = tokio::runtime::Builder::new_multi_thread().build().unwrap();
-        // let img = runtime.block_on(async_render(
-        //     Box::new(viewport.clone()),
-        //     &ray_color_bg_color,
-        //     Box::new(scene),
-        // ));
-        // write_img_f32(&img, "out/instance_test.png".to_string());
+        let img = runtime.block_on(async_render(
+            Box::new(viewport.clone()),
+            &ray_color_bg_color,
+            Box::new(scene),
+        ));
+        write_img_f32(&img, "out/instance_test.png".to_string());
 
-        // let img = runtime.block_on(async_render(
-        //     Box::new(viewport.clone()),
-        //     &ray_color_bg_color,
-        //     Box::new(scene2),
-        // ));
-        let img = viewport.render(&ray_color_bg_color, &scene2);
+        let img = runtime.block_on(async_render(
+            Box::new(viewport.clone()),
+            &ray_color_bg_color,
+            Box::new(scene2),
+        ));
+        // let img = viewport.render(&ray_color_bg_color, &scene2);
         write_img_f32(&img, "out/instance_test2.png".to_string());
     }
 }

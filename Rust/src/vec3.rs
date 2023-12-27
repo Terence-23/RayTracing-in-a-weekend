@@ -152,7 +152,13 @@ pub mod vec3 {
     }
 
     impl Vec3 {
-        pub fn rotated(self, rot: Self) -> Self {
+        pub fn rotate(&mut self, rot: Self) {
+            let rotated = self.rotated(rot);
+            self.x = rotated.x;
+            self.y = rotated.y;
+            self.z = rotated.z;
+        }
+        pub fn rotated(&self, rot: Self) -> Self {
             // alfa
             let asin = rot.x.sin();
             let acos = rot.x.cos();
@@ -285,6 +291,13 @@ pub mod ray {
 
         pub fn at(&self, t: f32) -> Vec3 {
             self.origin + self.direction * t
+        }
+        pub fn rotated(self, rot: Vec3) -> Self {
+            Self {
+                origin: self.origin.rotated(rot),
+                direction: self.direction.rotated(rot),
+                time: self.time,
+            }
         }
     }
 

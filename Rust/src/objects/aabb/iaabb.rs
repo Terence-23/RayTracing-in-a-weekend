@@ -2,42 +2,73 @@ use rand::random;
 
 use crate::{
     objects::{instance::Instance, maxf, minf, Hit, Interval, Object},
-    vec3::ray::Ray,
+    vec3::{ray::Ray, vec3::Vec3},
 };
 
 use super::Axis;
 #[derive(Debug, Clone)]
 pub struct IAABB {
-    x: Interval,
-    y: Interval,
-    z: Interval,
+    pub x: Interval,
+    pub y: Interval,
+    pub z: Interval,
     instances: Vec<Instance>,
     aabbs: Vec<IAABB>,
 }
 
 impl From<Instance> for IAABB {
     fn from(val: Instance) -> Self {
-        let x = val.qaabb.x + val.saabb.x + val.gett().x;
-        let y = val.qaabb.y + val.saabb.y + val.gett().y;
-        let z = val.qaabb.z + val.saabb.z + val.gett().z;
-        Self {
-            x: x.pad((x.max - x.min) / 2.0),
-            y: y.pad((y.max - y.min) / 2.0),
-            z: z.pad((x.max - z.min) / 2.0),
-            instances: vec![val.to_owned()],
-            aabbs: vec![],
-        }
+        return (&val).into();
     }
 }
 impl From<&Instance> for IAABB {
     fn from(val: &Instance) -> Self {
-        let x = val.qaabb.x + val.saabb.x + val.gett().x;
-        let y = val.qaabb.y + val.saabb.y + val.gett().y;
-        let z = val.qaabb.z + val.saabb.z + val.gett().z;
+        let x = val.qaabb.x + val.saabb.x;
+        let y = val.qaabb.y + val.saabb.y;
+        let z = val.qaabb.z + val.saabb.z;
+
+        let points: Vec<Vec3> = vec![
+            Vec3::new(x.min, y.min, z.min),
+            Vec3::new(x.min, y.min, z.max),
+            Vec3::new(x.min, y.max, z.min),
+            Vec3::new(x.min, y.max, z.max),
+            Vec3::new(x.max, y.min, z.min),
+            Vec3::new(x.max, y.min, z.max),
+            Vec3::new(x.max, y.max, z.min),
+            Vec3::new(x.max, y.max, z.max),
+        ]
+        .iter()
+        .map(|v| v.rotated(val.getr()))
+        .collect();
+        let mut max_x = points[0].x;
+        let mut max_y = points[0].y;
+        let mut max_z = points[0].z;
+        let mut min_x = points[0].x;
+        let mut min_y = points[0].y;
+        let mut min_z = points[0].z;
+
+        for p in points[1..].iter() {
+            max_x = maxf(max_x, p.x);
+            max_y = maxf(max_y, p.y);
+            max_z = maxf(max_z, p.z);
+
+            min_x = minf(min_x, p.x);
+            min_y = minf(min_y, p.y);
+            min_z = minf(min_z, p.z);
+        }
+
         Self {
-            x, //: x.pad((x.max - x.min) / 2.0),
-            y, //: y.pad((y.max - y.min) / 2.0),
-            z, //: z.pad((x.max - z.min) / 2.0),
+            x: Interval {
+                min: min_x,
+                max: max_x,
+            } + val.gett().x,
+            y: Interval {
+                min: min_y,
+                max: max_y,
+            } + val.gett().y,
+            z: Interval {
+                min: min_z,
+                max: max_z,
+            } + val.gett().z,
             instances: vec![val.to_owned()],
             aabbs: vec![],
         }

@@ -157,6 +157,16 @@ impl PartialEq for Scene {
                 return false;
             }
         }
+        for (i, o) in zip(self.quads.to_owned(), other.quads.to_owned()) {
+            if i != o {
+                return false;
+            }
+        }
+        for (i, o) in zip(self.instances.to_owned(), other.instances.to_owned()) {
+            if i != o {
+                return false;
+            }
+        }
         return true;
     }
 }
