@@ -149,7 +149,7 @@ impl Object for IAABB {
 
     fn collision_normal(&self, r: Ray, mint: f32, maxt: f32) -> Option<Hit> {
         if self.instances.is_empty() && self.aabbs.is_empty() {
-            eprintln!("empty");
+            // eprintln!("empty; iaabb.rs:152");
             return None;
         }
 

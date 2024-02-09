@@ -155,13 +155,13 @@ fn main() {
             },
             1000.0,
             Some(Vec3::new(0.8, 0.5, 1.0)),
-            Some(EMPTY_M),
+            Some(SCATTER_M),
         ),
     ];
     let _scene = Scene::new_sphere(spheres);
     let mut viewport = Viewport::new_from_res(
-        4000,
-        4000,
+        400,
+        400,
         SAMPLES,
         DEPTH,
         2.0,
@@ -214,7 +214,7 @@ fn main() {
         "First frame.png".to_string(),
         viewport,
         ray_color_d,
-        &ltr_scene,
+        &_scene,
     );
 
     // Command::new("mkdir").arg("-p").arg("/tmp/video").spawn().expect("Failed to execute mkdir");

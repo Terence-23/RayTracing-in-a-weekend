@@ -440,7 +440,7 @@ impl Viewport {
         );
         pb.set_message(self.msg.to_owned());
         let inv_g = 1.0 / self.gamma;
-
+        let s_root = (self.samples as f32).sqrt().ceil() as usize;
         for j in 0..self.height {
             pb.inc(1);
             let mut row = Vec::new();
@@ -452,20 +452,24 @@ impl Viewport {
                     y: 0.0,
                     z: 0.0,
                 };
-                for _ in 0..self.samples {
-                    let random_point = Vec3::random_in_unit_disk();
+                for x in 0..s_root {
+                    for y in 0..s_root {
+                        let random_point = Vec3::random_in_unit_disk();
 
-                    let r = Ray::new(
-                        self.origin
-                            + (self.u * random_point.x + self.v * random_point.y)
-                                * self.lens_radius,
-                        self.upper_left_corner
-                            + self.p_delta_u * (i as f32 + rng.gen::<f32>())
-                            + self.p_delta_v * (j as f32 + rng.gen::<f32>()),
-                    );
-                    color += Vec3::from_rgb(ray_color(r, &scene, self.depth));
+                        let r = Ray::new(
+                            self.origin
+                                + (self.u * random_point.x + self.v * random_point.y)
+                                    * self.lens_radius,
+                            self.upper_left_corner
+                                + self.p_delta_u
+                                    * (i as f32 + ((x as f32 + rng.gen::<f32>()) / s_root as f32))
+                                + self.p_delta_v
+                                    * (j as f32 + ((y as f32 + rng.gen::<f32>()) / s_root as f32)),
+                        );
+                        color += Vec3::from_rgb(ray_color(r, &scene, self.depth));
+                    }
                 }
-                row.push(gamma_correct(color / self.samples as f32, inv_g).to_rgb());
+                row.push(gamma_correct(color / (s_root * s_root) as f32, inv_g).to_rgb());
             }
             img.push(row);
         }

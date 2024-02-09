@@ -196,7 +196,7 @@ impl Object for QuadAABB {
 
     fn collision_normal(&self, r: Ray, mint: f32, maxt: f32) -> Option<Hit> {
         if self.quads.is_empty() && self.aabbs.is_empty() {
-            eprintln!("empty");
+            // eprintln!("empty; qaabb.rs:199");
             return None;
         }
 

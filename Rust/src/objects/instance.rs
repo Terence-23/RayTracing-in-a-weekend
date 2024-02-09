@@ -21,8 +21,8 @@ type DistFn = dyn Fn(f32) -> f32 + Sync;
 fn surface(_: f32) -> f32 {
     -1.0
 }
-fn const_density(d: f32) -> f32 {
-    thread_rng().gen::<f32>().log10() / -d
+pub fn const_density(d: f32) -> f32 {
+    thread_rng().gen::<f32>().ln() / -d
 }
 
 #[derive(Clone)]
@@ -34,8 +34,8 @@ pub struct Instance {
     translation: Vec3,
     rotation: Vec3,
 
-    dist_fn: &'static DistFn,
-    density: f32,
+    pub dist_fn: &'static DistFn,
+    pub density: f32,
 }
 
 impl std::fmt::Debug for Instance {
@@ -496,9 +496,42 @@ mod tests {
             //Green
             Quad::new(
                 Vec3 {
+                    x: -0.5,
+                    y: -0.5,
+                    z: 1.0,
+                },
+                Vec3 {
+                    x: 1.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                Vec3 {
+                    x: 0.0,
+                    y: 1.0,
+                    z: 0.0,
+                },
+                Material::new_emmiting(
+                    0.0,
+                    0.0,
+                    1.0,
+                    Vec3 {
+                        x: 4.0,
+                        y: 4.0,
+                        z: 4.0,
+                    },
+                ),
+                Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                ImageTexture::from_color(Rgb { 0: [0.2, 1.0, 0.2] }),
+            ),
+            Quad::new(
+                Vec3 {
                     x: -2.0,
                     y: -2.0,
-                    z: 1.0,
+                    z: 0.999,
                 },
                 Vec3 {
                     x: 4.0,
@@ -515,9 +548,9 @@ mod tests {
                     0.0,
                     1.0,
                     Vec3 {
-                        x: 4.0,
-                        y: 4.0,
-                        z: 4.0,
+                        x: 0.0,
+                        y: 0.0,
+                        z: 0.0,
                     },
                 ),
                 Vec3 {
@@ -582,10 +615,11 @@ mod tests {
         let img = runtime.block_on(async_render(
             Box::new(viewport.clone()),
             &ray_color_bg_color,
-            Box::new(scene),
+            Box::new(scene.to_owned()),
         ));
         write_img_f32(&img, "out/instance_test.png".to_string());
-
+        // let img = viewport.render(&ray_color_bg_color, &scene);
+        // write_img_f32(&img, "out/instance_stratified_test.png".to_string());
         let img = runtime.block_on(async_render(
             Box::new(viewport.clone()),
             &ray_color_bg_color,
@@ -813,7 +847,7 @@ mod tests {
             z: 0.0,
         });
         instance.dist_fn = &const_density;
-        instance.density = 1.0;
+        instance.density = 0.01;
         let scene = Scene::new(vec![], quads.to_owned(), vec![instance.to_owned()]);
         let viewport = Viewport::new_from_res(
             400,

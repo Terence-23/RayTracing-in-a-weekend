@@ -13,7 +13,7 @@ pub fn ray_color_gradient(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
         return Rgb([0.0, 0.0, 0.0]);
     }
     let mint = 0.001;
-    let maxt = 1000.0;
+    let maxt = 100000.0;
 
     let hit = scene.collision_normal(r, mint, maxt);
 
@@ -44,7 +44,7 @@ pub fn ray_color_bg_color(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
         return Rgb([0.0, 0.0, 0.0]);
     }
     let mint = 0.001;
-    let maxt = 1000.0;
+    let maxt = 10000.0;
 
     let hit = scene.collision_normal(r, mint, maxt);
 
