@@ -45,8 +45,18 @@ fn ray_color_d(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
     return Rgb([(1.0 - t) + t * 0.5, (1 as f32 - t) + t * 0.7, 1.0]); //(1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0);
 }
 
+use std::collections::VecDeque;
 #[allow(unused_imports)]
 use std::{process::Command, time::Instant};
+
+use crate::{
+    objects::{
+        instance::{const_density, Instance},
+        quad::Quad,
+    },
+    texture::texture::ImageTexture,
+    viewport::{async_render, ray_color::ray_color_bg_color},
+};
 
 #[allow(unused)]
 fn test_run(
@@ -77,7 +87,341 @@ fn test_run(
     return img;
 }
 
+fn presentation_image() {
+    const PI: f32 = std::f32::consts::PI;
+    let samples = 100;
+    let spheres = vec![Sphere::new(
+        Vec3 {
+            x: -1.6,
+            y: -1.6,
+            z: 3.0,
+        },
+        0.4,
+        Some(Vec3 {
+            x: 1.0,
+            y: 0.0,
+            z: 0.0,
+        }),
+        Some(SCATTER_M),
+    )];
+
+    let quads = vec![
+        //Red
+        Quad::new(
+            Vec3 {
+                x: -2.0,
+                y: -2.0,
+                z: 5.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: -4.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 4.0,
+                z: 0.0,
+            },
+            METALLIC_M,
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            ImageTexture::from_color(Rgb {
+                0: [0.85, 0.85, 0.85],
+            }),
+        ),
+        //Light
+        Quad::new(
+            Vec3 {
+                x: -1.5,
+                y: -1.5,
+                z: 1.001,
+            },
+            Vec3 {
+                x: 3.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 3.0,
+                z: 0.0,
+            },
+            Material::new_emmiting(
+                0.0,
+                0.0,
+                1.0,
+                Vec3 {
+                    x: 4.0,
+                    y: 4.0,
+                    z: 4.0,
+                },
+            ),
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            ImageTexture::from_color(Rgb { 0: [1.0, 1.0, 1.0] }),
+        ),
+        //Blue
+        Quad::new(
+            Vec3 {
+                x: 2.0,
+                y: -2.0,
+                z: 1.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 4.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 4.0,
+                z: 0.0,
+            },
+            SCATTER_M,
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            ImageTexture::from_color(Rgb { 0: [0.2, 0.2, 1.0] }),
+        ),
+        //Orange
+        Quad::new(
+            Vec3 {
+                x: -2.0,
+                y: 2.0,
+                z: 1.0,
+            },
+            Vec3 {
+                x: 4.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 4.0,
+            },
+            SCATTER_M,
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            ImageTexture::from_color(Rgb { 0: [1.0, 0.5, 0.0] }),
+        ),
+        //Teal
+        Quad::new(
+            Vec3 {
+                x: -2.0,
+                y: -2.0,
+                z: 5.0,
+            },
+            Vec3 {
+                x: 4.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: -4.0,
+            },
+            SCATTER_M,
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            ImageTexture::from_color(Rgb { 0: [0.2, 0.8, 0.8] }),
+        ),
+        //Green
+        Quad::new(
+            Vec3 {
+                x: -2.0,
+                y: -2.0,
+                z: 1.0,
+            },
+            Vec3 {
+                x: 4.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 4.0,
+                z: 0.0,
+            },
+            Material::new_emmiting(
+                0.0,
+                0.0,
+                1.0,
+                Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+            ),
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            ImageTexture::from_color(Rgb { 0: [0.2, 1.0, 0.2] }),
+        ),
+    ];
+    // let scene = Scene::new(spheres, quads.to_owned());
+    let mut smoke = Instance::new_box(
+        Vec3::new(-1.0, -0.5, -0.5),
+        Vec3::new(1.0, 0.5, 0.5),
+        ImageTexture::from_color(Vec3::new(0.2, 0.2, 0.2).to_rgb()),
+        SCATTER_M,
+    );
+    let glass_color = ImageTexture::from_color(
+        Vec3 {
+            x: 0.8,
+            y: 0.8,
+            z: 0.8,
+        }
+        .to_rgb(),
+    );
+    let mut glass = Instance::new_quads(vec![
+        Quad::new(
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 4.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 2.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Material {
+                metallicness: 1.0,
+                opacity: 0.8,
+                ir: 1.50,
+                emmited: Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+            },
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            glass_color.to_owned(),
+        ),
+        Quad::new(
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: -0.001,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 4.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 2.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Material {
+                metallicness: 1.0,
+                opacity: 0.8,
+                ir: 2.0 / 3.0,
+                emmited: Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+            },
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            glass_color.to_owned(),
+        ),
+    ]);
+    smoke.translate(Vec3 {
+        x: -0.0,
+        y: -1.5,
+        z: 2.0,
+    });
+    smoke.rotate(Vec3 {
+        x: 0.0,
+        y: PI / 4.0,
+        z: 0.0,
+    });
+    smoke.dist_fn = &const_density;
+    smoke.density = 2.0;
+    glass.translate(Vec3 {
+        x: 2.0 - 3f32.sqrt(),
+        y: -2.0,
+        z: 3.0,
+    });
+    glass.rotate(Vec3 {
+        x: 0.0,
+        y: -PI / 6.0,
+        z: 0.0,
+    });
+    let scene = Scene::new(
+        spheres,
+        quads.to_owned(),
+        vec![smoke.to_owned(), glass.to_owned()],
+    );
+
+    let viewport = Viewport::new_from_res(
+        2000,
+        2000,
+        samples,
+        20,
+        2.0,
+        Some(90.0),
+        Some(Vec3 {
+            x: 0.0,
+            y: -0.0,
+            z: 7.0,
+        }),
+        Some(Vec3 {
+            x: 0.0,
+            y: 0.0,
+            z: -1.0,
+        }),
+        None,
+        Some("Rendering".to_string()),
+        None,
+    );
+    eprintln!("Running");
+    let runtime = tokio::runtime::Builder::new_multi_thread().build().unwrap();
+    let img = runtime.block_on(async_render(
+        Box::new(viewport.clone()),
+        &ray_color_bg_color,
+        Box::new(scene),
+    ));
+    write_img_f32(&img, "Presentation.png".to_string());
+}
+
 fn main() {
+    presentation_image();
+    return;
     println!("Hello, world!");
     const SAMPLES: usize = 100;
     const DEPTH: usize = 100;

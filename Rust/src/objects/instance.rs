@@ -830,25 +830,25 @@ mod tests {
             ),
         ];
         // let scene = Scene::new(spheres, quads.to_owned());
-        let mut instance = Instance::new_box(
+        let mut smoke = Instance::new_box(
             Vec3::new(-1.5, -0.5, -0.5),
             Vec3::new(1.5, 0.5, 0.5),
             ImageTexture::from_color(Vec3::new(0.2, 0.2, 0.2).to_rgb()),
             SCATTER_M,
         );
-        instance.translate(Vec3 {
+        smoke.translate(Vec3 {
             x: -0.0,
             y: -1.5,
             z: 2.0,
         });
-        instance.rotate(Vec3 {
+        smoke.rotate(Vec3 {
             x: 0.0,
             y: PI / 4.0,
             z: 0.0,
         });
-        instance.dist_fn = &const_density;
-        instance.density = 0.01;
-        let scene = Scene::new(vec![], quads.to_owned(), vec![instance.to_owned()]);
+        smoke.dist_fn = &const_density;
+        smoke.density = 2.0;
+        let scene = Scene::new(vec![], quads.to_owned(), vec![smoke.to_owned()]);
         let viewport = Viewport::new_from_res(
             400,
             400,
