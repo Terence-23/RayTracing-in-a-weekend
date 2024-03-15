@@ -1,6 +1,16 @@
 use super::{Hit, JsonValue};
 use crate::vec3::{ray::Ray, vec3::Vec3};
 use rand::random;
+
+pub fn lambertian_scatter_pdf(cos_theta: f32) -> f32 {
+    // let cos_theta = Vec3::dot(&hit.normal, r_out.direction.unit());
+    // let cos_theta = r_out.direction.length() * 0.5;
+    return if cos_theta > 0.0 {
+        cos_theta * std::f32::consts::FRAC_1_PI
+    } else {
+        0.0
+    };
+}
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Material {
     pub metallicness: f32,
@@ -92,7 +102,7 @@ impl Material {
         return r0 + (1.0 - r0) * (1.0 - cosine).powi(5);
     }
 
-    pub fn on_hit(&self, h: Hit, r: Ray) -> (Ray, Vec3) {
+    pub fn on_hit(&self, h: Hit, r: Ray) -> (Ray, Vec3, f32) {
         if self.opacity > 0.0 {
             let n;
             let front_face = if r.direction.dot(h.normal) > 0.0 {
@@ -122,13 +132,25 @@ impl Material {
                 Self::refract(unit_direction, n, refraction_ratio)
             };
 
-            return (Ray::new_with_time(h.point, direction, r.time), self.emmited);
+            return (
+                Ray::new_with_time(h.point, direction, r.time),
+                self.emmited,
+                0.0,
+            );
         }
         // eprintln!("reflect");
-        let sc = diffuse(h, r).direction * (1.0 - self.metallicness);
-        let mut reflect = Ray::new(h.point, r.direction.unit().reflect(h.normal));
-        reflect.direction = reflect.direction * self.metallicness + sc;
-        return (reflect, self.emmited);
+        let sc = diffuse(h, r).direction;
+        let mut reflect = Ray::new_with_time(h.point, r.direction.unit().reflect(h.normal), r.time);
+        reflect.direction = reflect.direction * self.metallicness + sc * (1.0 - self.metallicness);
+        return (
+            reflect,
+            self.emmited,
+            if self.metallicness != 1.0 {
+                sc.dot(h.normal)
+            } else {
+                0.0
+            },
+        );
     }
 }
 
@@ -142,6 +164,7 @@ pub const METALLIC_M: Material = Material {
         z: 0.0,
     },
 };
+
 pub const SCATTER_M: Material = Material {
     metallicness: 0.0,
     opacity: 0.0,
@@ -152,6 +175,7 @@ pub const SCATTER_M: Material = Material {
         z: 0.0,
     },
 };
+
 pub const FUZZY3_M: Material = Material {
     metallicness: 0.7,
     opacity: 0.0,
@@ -162,6 +186,7 @@ pub const FUZZY3_M: Material = Material {
         z: 0.0,
     },
 };
+
 pub const GLASS_M: Material = Material {
     metallicness: 1.0,
     opacity: 1.0,
@@ -172,6 +197,7 @@ pub const GLASS_M: Material = Material {
         z: 0.0,
     },
 };
+
 pub const GLASSR_M: Material = Material {
     metallicness: 1.0,
     opacity: 1.0,
@@ -182,6 +208,7 @@ pub const GLASSR_M: Material = Material {
         z: 0.0,
     },
 };
+
 pub const EMPTY_M: Material = SCATTER_M;
 fn diffuse(hit: Hit, r: Ray) -> Ray {
     // println!("diff");

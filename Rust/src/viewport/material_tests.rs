@@ -34,7 +34,7 @@ fn ray_color_d(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
         } else {
             true
         };
-        let (mut next, _) = hit.mat.on_hit(hit, r);
+        let (mut next, _, _) = hit.mat.on_hit(hit, r);
         if next.direction.close_to_zero() {
             next.direction = if front { hit.normal } else { hit.normal * -1.0 };
         }

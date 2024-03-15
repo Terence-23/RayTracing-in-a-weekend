@@ -9,6 +9,7 @@ pub mod aabb;
 pub mod instance;
 #[allow(dead_code)]
 pub mod materials;
+pub mod onb;
 pub mod quad;
 pub mod sphere;
 

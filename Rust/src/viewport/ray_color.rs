@@ -1,12 +1,14 @@
 use image::Rgb;
 
 use crate::{
+    lambertian_scatter_pdf,
     objects::NO_HIT,
     vec3::{ray::Ray, vec3::Vec3},
 };
 
 use super::Scene;
 
+//doesn't support emmisive materials
 pub fn ray_color_gradient(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
     // eprintln!("D: {}", depth);
     if depth < 1 {
@@ -25,7 +27,7 @@ pub fn ray_color_gradient(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
         } else {
             true
         };
-        let (mut next, _) = hit.mat.on_hit(hit, r);
+        let (mut next, _, _) = hit.mat.on_hit(hit, r);
         if next.direction.close_to_zero() {
             next.direction = if front { hit.normal } else { hit.normal * -1.0 };
         }
@@ -56,12 +58,33 @@ pub fn ray_color_bg_color(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
         } else {
             true
         };
-        let (mut next, emmited) = hit.mat.on_hit(hit, r);
+        let (mut next, emmited, cos_theta) = hit.mat.on_hit(hit, r);
         if next.direction.close_to_zero() {
             next.direction = if front { hit.normal } else { hit.normal * -1.0 };
         }
         // println!("depth: {}", depth);
-        return (Vec3::from_rgb(ray_color_bg_color(next, scene, depth - 1)) * cm + emmited)
+
+        let color = Vec3::from_rgb(ray_color_bg_color(next, scene, depth - 1)) * cm;
+        // assert!(
+        //     scattering_pdf / pdf == 1.0,
+        //     "math is not mathing: {}",
+        //     scattering_pdf
+        // );
+        let scattered_color = if hit.mat.metallicness != 1.0 {
+            let scattering_pdf = lambertian_scatter_pdf(cos_theta);
+            let pdf = scattering_pdf;
+            color * scattering_pdf / pdf
+        } else {
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            }
+        };
+
+        return (color * (hit.mat.metallicness)
+            + scattered_color * (1.0 - hit.mat.metallicness)
+            + emmited)
             .to_rgb();
     }
     // eprintln!("Sky");

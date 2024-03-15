@@ -32,7 +32,7 @@ fn ray_color_d(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
         } else {
             true
         };
-        let (mut next, _) = hit.mat.on_hit(hit, r);
+        let (mut next, _, _) = hit.mat.on_hit(hit, r);
         if next.direction.close_to_zero() {
             next.direction = if front { hit.normal } else { hit.normal * -1.0 };
         }
@@ -45,7 +45,6 @@ fn ray_color_d(r: Ray, scene: &Scene, depth: usize) -> Rgb<f32> {
     return Rgb([(1.0 - t) + t * 0.5, (1 as f32 - t) + t * 0.7, 1.0]); //(1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0);
 }
 
-use std::collections::VecDeque;
 #[allow(unused_imports)]
 use std::{process::Command, time::Instant};
 
@@ -89,7 +88,7 @@ fn test_run(
 
 fn presentation_image() {
     const PI: f32 = std::f32::consts::PI;
-    let samples = 100;
+    let samples = 2500;
     let spheres = vec![Sphere::new(
         Vec3 {
             x: -1.6,
@@ -389,8 +388,8 @@ fn presentation_image() {
     );
 
     let viewport = Viewport::new_from_res(
-        2000,
-        2000,
+        400,
+        400,
         samples,
         20,
         2.0,
