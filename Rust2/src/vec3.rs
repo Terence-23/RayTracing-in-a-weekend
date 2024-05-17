@@ -233,6 +233,13 @@ pub mod vec3 {
         pub fn close_to_zero(&self) -> bool {
             self.x.abs() < 1e-7 && self.y.abs() < 1e-7 && self.z.abs() < 1e-7
         }
+        pub fn field_wise_mult(&self, v: Vec3) -> Vec3 {
+            Vec3 {
+                x: self.x * v.x,
+                y: self.y * v.y,
+                z: self.z * v.z,
+            }
+        }
         pub(crate) fn gamma_correct(&self, gamma: f32) -> Vec3 {
             Vec3 {
                 x: self.x.powf(gamma),
@@ -354,7 +361,7 @@ pub mod ray {
             }
             pb.finish_with_message("Writing to disk");
 
-            write_img_f32(&img, "out/viewport_test.png".to_string());
+            write_img_f32(&img, "test_out/viewport_test.png".to_string());
         }
 
         #[test]

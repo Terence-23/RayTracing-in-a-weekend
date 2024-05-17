@@ -1,11 +1,21 @@
+use std::sync::Arc;
+
 use crate::vec3::vec3::Vec3;
 
-use super::{aabb::Interval, hit::Hit, Object};
+use super::{
+    aabb::Interval,
+    hit::Hit,
+    material::Material,
+    texture::{ColorResult, Texture},
+    Object,
+};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Sphere {
     pub origin: Vec3,
     pub radius: f32,
+    pub mat: Arc<dyn Material>,
+    pub texture: Arc<dyn Texture>,
 }
 
 impl Object for Sphere {
@@ -50,14 +60,19 @@ impl Object for Sphere {
             n: normal,
             t: x,
         });
-
-        // let u: f32 = (f32::atan2(-normal.z, normal.x) + std::f32::consts::PI)
-        //     * std::f32::consts::FRAC_1_PI
-        //     * 0.5;
-        // let v: f32 = 1.0 - (std::f32::consts::FRAC_1_PI * f32::acos(-normal.y));
     }
 
-    fn reflect(&self, h: super::hit::Hit) -> super::material::ReflectResult {
-        todo!()
+    fn reflect(&self, h: &Hit) -> super::material::ReflectResult {
+        self.mat.on_hit(h)
+    }
+
+    fn color(&self, h: &Hit) -> ColorResult {
+        let u: f32 =
+            (f32::atan2(-h.n.z, h.n.x) + std::f32::consts::PI) * std::f32::consts::FRAC_1_PI * 0.5;
+        let v: f32 = 1.0 - (std::f32::consts::FRAC_1_PI * f32::acos(-h.n.y));
+
+        debug_assert!(u <= 1.0 && v >= 0.0, "U too big");
+        debug_assert!(v <= 1.0 && v >= 0.0, "V too big");
+        self.texture.color_at(u, v)
     }
 }

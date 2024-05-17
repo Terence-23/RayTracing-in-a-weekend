@@ -1,14 +1,15 @@
-use crate::vec3::vec3::Vec3;
+use crate::{quaternions::Quaternion, vec3::vec3::Vec3};
 
-pub trait Rotation {
+pub trait Rotation: Into<Quaternion> {
     fn rotate(&self, v: &Vec3) -> Vec3;
+    fn add(&self, r: impl Rotation) -> Self;
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct EulerAngles {
-    x: f32,
-    y: f32,
-    z: f32,
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
 }
 
 impl EulerAngles {
@@ -16,6 +17,7 @@ impl EulerAngles {
         Self { x: x, y: y, z: z }
     }
 }
+
 impl Rotation for EulerAngles {
     fn rotate(&self, v: &Vec3) -> Vec3 {
         // alfa
@@ -37,5 +39,9 @@ impl Rotation for EulerAngles {
                 + v.z * (acos * bsin * csin - asin * ccos),
             z: v.x * -bsin + v.y * asin * bcos + v.z * acos * bcos,
         }
+    }
+
+    fn add(&self, r: impl Rotation) -> Self {
+        Quaternion::from(self).hamilton(&r.into()).into()
     }
 }

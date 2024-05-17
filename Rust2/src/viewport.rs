@@ -20,6 +20,7 @@ pub(crate) struct Viewport {
     samples: usize,
     recursion_depth: usize,
     gamma: f32,
+    bg_color: Vec3,
     s: Scene,
 }
 
@@ -32,6 +33,7 @@ impl Viewport {
         height: usize,
         samples: usize,
         recursion_depth: usize,
+        bg_color: Vec3,
         gamma: f32,
     ) -> Self {
         Self {
@@ -44,6 +46,7 @@ impl Viewport {
             s,
             recursion_depth,
             gamma,
+            bg_color,
         }
     }
     fn make_image(&self, iv: Vec<Vec<Vec3>>) -> ImageBuffer<Rgb<u8>, Vec<u8>> {

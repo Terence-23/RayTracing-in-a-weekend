@@ -1,5 +1,6 @@
 pub mod objects;
 pub mod onb;
+pub mod quaternions;
 pub mod rotation;
 pub mod vec3;
 pub mod viewport;
