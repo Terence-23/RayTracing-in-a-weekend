@@ -1,9 +1,10 @@
-use std::{f32::consts::PI, sync::Arc};
+use std::{cell::Ref, f32::consts::PI, sync::Arc};
 
 use crate::vec3::{ray::Ray, vec3::Vec3};
 
 use super::hit::Hit;
 use lazy_static::lazy_static;
+use rand::random;
 
 pub struct ReflectResult {
     pub(crate) reflected: Ray,
@@ -71,20 +72,63 @@ pub fn mirror(h: &Hit) -> ReflectResult {
     }
 }
 
-pub struct ComboReflect(f32);
-
-impl Material for ComboReflect {
-    fn on_hit(&self, h: &Hit) -> ReflectResult {
-        let s_dir = (h.n + Vec3::random_unit_vec()).unit();
-        let r_dir = h.r.direction.reflect(h.n).unit();
-
-        ReflectResult {
-            reflected: Ray {
-                origin: h.p,
-                direction: s_dir * (1.0 - self.0) + r_dir * self.0,
-                time: h.r.time,
-            },
-            pdf: s_dir.dot(h.n) * FRAC_1_2PI,
+pub struct MirrorGlass {
+    opacity: f32,
+    ir: f32,
+}
+impl MirrorGlass {
+    fn refract(uv: Vec3, n: Vec3, etai_over_etat: f32) -> Vec3 {
+        let mut cos_theta = (-uv).dot(n);
+        if cos_theta > 1.0 {
+            cos_theta = 1.0
         }
+        let r_out_perp = (uv + n * cos_theta) * etai_over_etat;
+        let r_out_parallel = n * -(1.0 - r_out_perp.length2()).abs().sqrt();
+        return r_out_perp + r_out_parallel;
+    }
+    fn reflectance(cosine: f32, ref_idx: f32) -> f32 {
+        // Use Schlick's approximation for reflectance.
+        let mut r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
+        r0 = r0 * r0;
+        return r0 + (1.0 - r0) * (1.0 - cosine).powi(5);
     }
 }
+
+impl Material for MirrorGlass {
+    fn on_hit(&self, h: &Hit) -> ReflectResult {
+        let n;
+        let front_face = if h.r.direction.dot(h.n) > 0.0 {
+            n = -h.n;
+            false
+        } else {
+            n = h.n;
+            true
+        };
+        let refraction_ratio = if front_face { 1.0 / self.ir } else { self.ir };
+
+        let unit_direction = h.r.direction.unit();
+        let mut cos_theta = (-unit_direction).dot(n);
+        if cos_theta > 1.0 {
+            cos_theta = 1.0;
+        }
+        let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
+
+        let cannot_refract = refraction_ratio * sin_theta > 1.0;
+        let reflectance = Self::reflectance(cos_theta, refraction_ratio);
+        // eprintln!("ff: {} can refract: {} ref_ratio: {}", front_face, !cannot_refract, refraction_ratio);
+        let direction = if cannot_refract || reflectance > random::<f32>() {
+            // eprintln!("reflect");
+            unit_direction.reflect(n)
+        } else {
+            // eprintln!("ud: {:?} hn: {:?}", unit_direction, n);
+            Self::refract(unit_direction, n, refraction_ratio)
+        };
+
+        return ReflectResult {
+            reflected: Ray::new_with_time(h.p, direction, h.r.time),
+            pdf: 1.0,
+        };
+    }
+}
+
+pub struct MixedMaterial {}

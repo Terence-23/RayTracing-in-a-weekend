@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+compute = "0.2.3"
 image = "0.25.1"
 indicatif = "0.17.8"
 lazy_static = "1.4.0"

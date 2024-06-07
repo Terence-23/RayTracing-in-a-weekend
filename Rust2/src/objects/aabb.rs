@@ -14,8 +14,8 @@ use super::{hit::Hit, instance::Instance, Object};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Interval {
-    min: f32,
-    max: f32,
+    pub(super) min: f32,
+    pub(super) max: f32,
 }
 impl Interval {
     pub fn intervals_to_bounding_vecs(x: Interval, y: Interval, z: Interval) -> (Vec3, Vec3) {
@@ -49,6 +49,9 @@ impl Interval {
         );
     }
 
+    pub fn mid_point(&self) -> f32 {
+        (self.min + self.max) * 0.5
+    }
     pub(crate) fn new(x1: f32, x2: f32) -> Interval {
         Interval {
             min: minf(x1, x2),
@@ -81,10 +84,10 @@ impl Interval {
         Some(Interval::new(x1, x2))
     }
 }
-fn minf(x1: f32, x2: f32) -> f32 {
+pub(super) fn minf(x1: f32, x2: f32) -> f32 {
     return if x1 <= x2 { x1 } else { x2 };
 }
-fn maxf(x1: f32, x2: f32) -> f32 {
+pub(super) fn maxf(x1: f32, x2: f32) -> f32 {
     return if x1 >= x2 { x1 } else { x2 };
 }
 impl Add for Interval {

@@ -10,18 +10,18 @@ pub trait Texture {
     fn color_at(&self, x: f32, y: f32) -> ColorResult;
 }
 
-pub struct ConstColorStruct {
+pub struct ConstColorTexture {
     mult: Vec3,
     emmit: Vec3,
 }
 
-impl ConstColorStruct {
+impl ConstColorTexture {
     pub fn new(mult: Vec3, emmit: Vec3) -> Self {
         Self { mult, emmit }
     }
 }
 
-impl Texture for ConstColorStruct {
+impl Texture for ConstColorTexture {
     fn color_at(&self, _: f32, _: f32) -> ColorResult {
         ColorResult {
             emmited: self.emmit,

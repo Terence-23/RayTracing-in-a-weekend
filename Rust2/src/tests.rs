@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     objects::{
-        instance::Instance, material::LAMBERTIAN, sphere::Sphere, texture::ConstColorStruct,
+        instance::Instance, material::LAMBERTIAN, sphere::Sphere, texture::ConstColorTexture,
     },
     vec3::vec3::Vec3,
     viewport::{camera::Camera, ray_color, scene::Scene, Viewport},
@@ -14,7 +14,7 @@ fn normal_sphere_test() -> Result<(), image::ImageError> {
         origin: Vec3::zero(),
         radius: 0.5,
         mat: LAMBERTIAN.clone(),
-        texture: Arc::new(ConstColorStruct::new(
+        texture: Arc::new(ConstColorTexture::new(
             Vec3 {
                 x: 0.8,
                 y: 0.8,
@@ -76,7 +76,7 @@ fn lambertian_sphere_test() -> Result<(), image::ImageError> {
         origin: Vec3::zero(),
         radius: 0.5,
         mat: LAMBERTIAN.clone(),
-        texture: Arc::new(ConstColorStruct::new(
+        texture: Arc::new(ConstColorTexture::new(
             Vec3 {
                 x: 0.8,
                 y: 0.4,

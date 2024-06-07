@@ -9,8 +9,11 @@ use crate::{
 };
 
 use super::{
-    aabb::{Interval, AABB},
+    aabb::{maxf, minf, Interval, AABB},
     hit::Hit,
+    material::Material,
+    quad::Quad,
+    texture::Texture,
     Object,
 };
 
@@ -74,6 +77,89 @@ impl Instance {
             z: intervals.2,
         }
     }
+    pub fn new_box(a: Vec3, b: Vec3, tex: Arc<dyn Texture>, mat: Arc<dyn Material>) -> Self {
+        let min = Vec3::new(minf(a.x, b.x), minf(a.y, b.y), minf(a.z, b.z));
+        let max = Vec3::new(maxf(a.x, b.x), maxf(a.y, b.y), maxf(a.z, b.z));
+
+        let dx = Vec3::new(max.x - min.x, 0.0, 0.0);
+        let dy = Vec3::new(0.0, max.y - min.y, 0.0);
+        let dz = Vec3::new(0.0, 0.0, max.z - min.z);
+
+        Instance::new(Arc::new([
+            Arc::new(Quad::new(
+                Vec3::new(min.x, min.y, max.z),
+                dx,
+                dy,
+                mat.clone(),
+                Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                tex.to_owned(),
+            )),
+            Arc::new(Quad::new(
+                Vec3::new(max.x, min.y, max.z),
+                -dz,
+                dy,
+                mat.clone(),
+                Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                tex.to_owned(),
+            )),
+            Arc::new(Quad::new(
+                Vec3::new(max.x, min.y, min.z),
+                -dx,
+                dy,
+                mat.clone(),
+                Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                tex.to_owned(),
+            )),
+            Arc::new(Quad::new(
+                Vec3::new(min.x, min.y, min.z),
+                dz,
+                dy,
+                mat.clone(),
+                Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                tex.to_owned(),
+            )),
+            Arc::new(Quad::new(
+                Vec3::new(min.x, max.y, max.z),
+                dx,
+                -dz,
+                mat.clone(),
+                Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                tex.to_owned(),
+            )),
+            Arc::new(Quad::new(
+                Vec3::new(min.x, min.y, min.z),
+                dx,
+                dz,
+                mat.clone(),
+                Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                tex.to_owned(),
+            )),
+        ]))
+    }
     pub fn get_aabb(&self) -> AABB {
         let vecs = Interval::intervals_to_bounding_vecs(self.x, self.y, self.z);
         let (x, y, z) =
@@ -104,6 +190,7 @@ impl Instance {
         }
     }
     pub fn get_hit(&self, r: Ray, s: &Scene) -> Option<(Hit, Arc<dyn Object>)> {
+        // eprintln!("instance_hit");
         let mut min_h = None;
         for (i, h) in self
             .objects

@@ -6,6 +6,7 @@ pub mod aabb;
 pub mod hit;
 pub mod instance;
 pub mod material;
+pub mod quad;
 pub mod sphere;
 pub mod texture;
 
