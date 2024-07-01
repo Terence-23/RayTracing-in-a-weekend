@@ -226,6 +226,27 @@ pub mod vec3 {
             };
             // return p.unit();
         }
+        pub fn up() -> Vec3 {
+            Vec3 {
+                x: 0.0,
+                y: 1.0,
+                z: 0.0,
+            }
+        }
+        pub fn down() -> Vec3 {
+            Vec3 {
+                x: 0.0,
+                y: -1.0,
+                z: 0.0,
+            }
+        }
+        pub fn forward() -> Vec3 {
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 1.0,
+            }
+        }
 
         pub fn reflect(&self, n: Vec3) -> Vec3 {
             *self - n * 2.0 * self.dot(n)
@@ -262,6 +283,14 @@ pub mod vec3 {
                 (self.y * 255.99).clamp(0.0, 255.0).round() as u8,
                 (self.z * 255.99).clamp(0.0, 255.0).round() as u8,
             ])
+        }
+
+        pub(crate) fn right() -> Vec3 {
+            Vec3 {
+                x: 1.,
+                y: 0.0,
+                z: 0.0,
+            }
         }
     }
 }

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::vec3::vec3::Vec3;
+use crate::vec3::{ray, vec3::Vec3};
 
 use super::{
     aabb::Interval,
@@ -62,7 +62,7 @@ impl Object for Sphere {
         });
     }
 
-    fn reflect(&self, h: &Hit) -> super::material::ReflectResult {
+    fn reflect(&self, h: &Hit) -> ray::Ray {
         self.mat.on_hit(h)
     }
 
@@ -74,5 +74,13 @@ impl Object for Sphere {
         debug_assert!(u <= 1.0 && v >= 0.0, "U too big");
         debug_assert!(v <= 1.0 && v >= 0.0, "V too big");
         self.texture.color_at(u, v)
+    }
+
+    fn generator_pdf(&self, h: &Hit, r: &ray::Ray) -> f32 {
+        self.mat.generator_pdf(h, r)
+    }
+
+    fn material_pdf(&self, h: &Hit, r: &ray::Ray) -> f32 {
+        self.mat.material_pdf(h, r)
     }
 }

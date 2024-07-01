@@ -84,10 +84,10 @@ impl Interval {
         Some(Interval::new(x1, x2))
     }
 }
-pub(super) fn minf(x1: f32, x2: f32) -> f32 {
+pub(crate) fn minf(x1: f32, x2: f32) -> f32 {
     return if x1 <= x2 { x1 } else { x2 };
 }
-pub(super) fn maxf(x1: f32, x2: f32) -> f32 {
+pub(crate) fn maxf(x1: f32, x2: f32) -> f32 {
     return if x1 >= x2 { x1 } else { x2 };
 }
 impl Add for Interval {

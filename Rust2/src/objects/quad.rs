@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use crate::vec3::vec3::Vec3;
+use crate::vec3::{ray::Ray, vec3::Vec3};
 
 use super::{
     aabb::{maxf, minf, Interval},
     material::Material,
-    texture::{ImageTexture, Texture},
+    texture::Texture,
     Object,
 };
 
@@ -128,7 +128,7 @@ impl Object for Quad {
         })
     }
 
-    fn reflect(&self, h: &super::hit::Hit) -> super::material::ReflectResult {
+    fn reflect(&self, h: &super::hit::Hit) -> Ray {
         self.mat.on_hit(h)
     }
 
@@ -139,18 +139,23 @@ impl Object for Quad {
         // eprintln!("color: {:?}", self.texture.color_at(alfa, beta).multiplied);
         self.texture.color_at(alfa, beta)
     }
+
+    fn generator_pdf(&self, h: &super::hit::Hit, r: &Ray) -> f32 {
+        self.mat.generator_pdf(h, r)
+    }
+
+    fn material_pdf(&self, h: &super::hit::Hit, r: &Ray) -> f32 {
+        self.mat.material_pdf(h, r)
+    }
 }
 
 mod tests {
-    use std::sync::Arc;
-
     use crate::{
-        objects::{
-            instance::Instance, material::LAMBERTIAN, quad::Quad, texture::ConstColorTexture,
-        },
-        vec3::vec3::Vec3,
+        objects::{instance::Instance, material::LAMBERTIAN, texture::ConstColorTexture},
         viewport::{camera::Camera, ray_color::ray_color, scene::Scene, Viewport},
     };
+
+    use super::*;
 
     #[test]
     fn quad_test() -> image::ImageResult<()> {
