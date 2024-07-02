@@ -292,6 +292,9 @@ pub mod vec3 {
                 z: 0.0,
             }
         }
+        pub fn is_normal(&self) -> bool {
+            !(self.x.is_nan() || self.y.is_nan() || self.z.is_nan())
+        }
     }
 }
 #[allow(dead_code)]

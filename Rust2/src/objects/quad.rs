@@ -24,6 +24,7 @@ pub struct Quad {
 }
 
 impl Quad {
+    const MIN_AABB_WIDTH: f32 = 0.005;
     pub fn new(
         origin: Vec3,
         u: Vec3,
@@ -59,39 +60,52 @@ impl Object for Quad {
         let op_corner = self.origin + self.u + self.v;
         let v_corner = self.origin + self.v;
         let u_corner = self.origin + self.u;
-
-        (
-            Interval {
-                min: minf(
-                    minf(op_corner.x, v_corner.x),
-                    minf(u_corner.x, self.origin.x),
-                ),
-                max: maxf(
-                    maxf(op_corner.x, v_corner.x),
-                    maxf(u_corner.x, self.origin.x),
-                ),
-            },
-            Interval {
-                min: minf(
-                    minf(op_corner.y, v_corner.y),
-                    minf(u_corner.y, self.origin.y),
-                ),
-                max: maxf(
-                    maxf(op_corner.y, v_corner.y),
-                    maxf(u_corner.y, self.origin.y),
-                ),
-            },
-            Interval {
-                min: minf(
-                    minf(op_corner.z, v_corner.z),
-                    minf(u_corner.z, self.origin.z),
-                ),
-                max: maxf(
-                    maxf(op_corner.z, v_corner.z),
-                    maxf(u_corner.z, self.origin.z),
-                ),
-            },
-        )
+        let mut x = Interval {
+            min: minf(
+                minf(op_corner.x, v_corner.x),
+                minf(u_corner.x, self.origin.x),
+            ),
+            max: maxf(
+                maxf(op_corner.x, v_corner.x),
+                maxf(u_corner.x, self.origin.x),
+            ),
+        };
+        if x.max - x.min < Quad::MIN_AABB_WIDTH {
+            let c = 0.5 * (x.max + x.min);
+            x.max = c + Quad::MIN_AABB_WIDTH * 0.5;
+            x.min = c - Quad::MIN_AABB_WIDTH * 0.5;
+        }
+        let mut y = Interval {
+            min: minf(
+                minf(op_corner.y, v_corner.y),
+                minf(u_corner.y, self.origin.y),
+            ),
+            max: maxf(
+                maxf(op_corner.y, v_corner.y),
+                maxf(u_corner.y, self.origin.y),
+            ),
+        };
+        if y.max - y.min < Quad::MIN_AABB_WIDTH {
+            let c = 0.5 * (y.max + y.min);
+            y.max = c + Quad::MIN_AABB_WIDTH * 0.5;
+            y.min = c - Quad::MIN_AABB_WIDTH * 0.5;
+        }
+        let mut z = Interval {
+            min: minf(
+                minf(op_corner.z, v_corner.z),
+                minf(u_corner.z, self.origin.z),
+            ),
+            max: maxf(
+                maxf(op_corner.z, v_corner.z),
+                maxf(u_corner.z, self.origin.z),
+            ),
+        };
+        if z.max - z.min < Quad::MIN_AABB_WIDTH {
+            let c = 0.5 * (z.max + z.min);
+            z.max = c + Quad::MIN_AABB_WIDTH * 0.5;
+            z.min = c - Quad::MIN_AABB_WIDTH * 0.5;
+        }
+        (x, y, z)
     }
 
     fn get_hit(&self, r: crate::vec3::ray::Ray, mint: f32, maxt: f32) -> Option<super::hit::Hit> {
@@ -120,6 +134,7 @@ impl Object for Quad {
             return None;
         }
         // eprintln!("Hit");
+        debug_assert!(self.normal.length2() > 1e-10);
         Some(super::Hit {
             t: t,
             n: self.normal,

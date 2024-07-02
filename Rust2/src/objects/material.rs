@@ -108,7 +108,7 @@ pub fn mirror(h: &Hit) -> Ray {
 }
 
 pub struct MirrorGlass {
-    ir: f32,
+    pub ir: f32,
 }
 impl MirrorGlass {
     fn refract(uv: Vec3, n: Vec3, etai_over_etat: f32) -> Vec3 {

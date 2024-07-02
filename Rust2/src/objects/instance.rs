@@ -189,9 +189,12 @@ impl Instance {
             z: Interval::new(0.0, 0.0),
         }
     }
-    pub fn get_hit(&self, r: Ray, s: &Scene) -> Option<(Hit, Arc<dyn Object>)> {
+    pub fn get_hit(&self, mut r: Ray, s: &Scene) -> Option<(Hit, Arc<dyn Object>)> {
         // eprintln!("instance_hit");
+        debug_assert!(r.direction.is_normal(), "dir is nan");
         let mut min_h = None;
+        r.origin -= self.position;
+        debug_assert!(r.direction.is_normal(), "dir2 is nan");
         for (i, h) in self
             .objects
             .iter()
@@ -213,7 +216,17 @@ impl Instance {
         //     let h = min_h.to_owned().unwrap().0;
         //     eprintln!("We Hit: {:?}\n dist to sphere_origin: {}", h, h.p.length())
         // }
+        if let Some(mut hit) = min_h {
+            hit.0.p = self.rotation.rotate(&hit.0.p);
+            hit.0.p += self.position;
 
-        return min_h;
+            debug_assert!(hit.0.n.length2() > 1e-8);
+            let sn = hit.0.n;
+            hit.0.n = self.rotation.rotate(&hit.0.n);
+            debug_assert!(hit.0.n.length2() > 1e-8, "{:?}, {:?}", self.rotation, sn);
+            return Some(hit);
+        }
+
+        return None;
     }
 }

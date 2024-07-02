@@ -54,6 +54,29 @@ impl Object for Sphere {
             return None;
         }
         let normal = (r.at(x) - origin).unit();
+        // println!("{:?}", normal);
+        debug_assert!(
+            !normal.x.is_nan(),
+            "nx is nan: {}, {:?}, {:?}, {:?}, {}",
+            normal.x,
+            r.at(x) - origin,
+            r,
+            origin,
+            x
+        );
+        debug_assert!(
+            !normal.y.is_nan(),
+            "ny is nan: {}, {:?}",
+            normal.y,
+            r.at(x) - origin
+        );
+        debug_assert!(
+            !normal.z.is_nan(),
+            "nz is nan: {}, {:?}",
+            normal.z,
+            r.at(x) - origin
+        );
+        debug_assert!(normal.length2() > 1e-10);
         return Some(Hit {
             r,
             p: r.at(x),
@@ -71,8 +94,15 @@ impl Object for Sphere {
             (f32::atan2(-h.n.z, h.n.x) + std::f32::consts::PI) * std::f32::consts::FRAC_1_PI * 0.5;
         let v: f32 = 1.0 - (std::f32::consts::FRAC_1_PI * f32::acos(-h.n.y));
 
-        debug_assert!(u <= 1.0 && v >= 0.0, "U too big");
-        debug_assert!(v <= 1.0 && v >= 0.0, "V too big");
+        debug_assert!(
+            u <= 1.0 && u >= 0.0,
+            "U too big: {}, atan: {}, z: {}, x: {}",
+            u,
+            f32::atan2(-h.n.z, h.n.x),
+            -h.n.z,
+            h.n.x
+        );
+        debug_assert!(v <= 1.0 && v >= 0.0, "V too big {}", v);
         self.texture.color_at(u, v)
     }
 

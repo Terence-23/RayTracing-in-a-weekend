@@ -694,4 +694,5 @@ fn light_biased_ray_color_test() -> ImageResult<()> {
     vp2.render().save("test_out/ray_color_test.png")
 }
 
+#[cfg(test)]
 mod material_tests;

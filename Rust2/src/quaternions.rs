@@ -129,11 +129,12 @@ impl Quaternion {
         self.w * oth.w + self.x * oth.x + self.y * oth.y + self.z * oth.z
     }
     pub fn hamilton(&self, oth: &Quaternion) -> Quaternion {
+        //self: 1 oth: 2
         Quaternion {
             w: self.w * oth.w - self.x * oth.x - self.y * oth.y - self.z * oth.z,
-            x: self.w * oth.x + self.x * oth.w + self.y * oth.z - oth.y * self.z,
+            x: self.w * oth.x + self.x * oth.w + self.y * oth.z - self.z * oth.y,
             y: self.w * oth.y - self.x * oth.z + self.y * oth.w + self.z * oth.x,
-            z: self.w * oth.z + self.x * oth.y - self.y * oth.x + self.w * oth.z,
+            z: self.w * oth.z + self.x * oth.y - self.y * oth.x + self.z * oth.w,
         }
     }
     pub fn conjugate(&self) -> Quaternion {
@@ -176,5 +177,25 @@ impl Rotation for Quaternion {
 
     fn add(&self, r: impl Rotation) -> Self {
         self.hamilton(&r.into())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::vec3::vec3::Vec3;
+
+    use super::{Quaternion, ZERO_ROTATION};
+
+    #[test]
+    fn nor_rot() -> () {
+        let q = ZERO_ROTATION;
+        let cq = q.conjugate();
+        let rotated: Quaternion = (&Vec3::forward()).into();
+
+        let half = q.hamilton(&rotated);
+        assert!(half.get_vec().length2() > 1e-10, "half_to_short {:?}", half);
+        eprintln!("r: {:?},\nh: {:?}\nq: {:?}\ncq: {:?}", rotated, half, q, cq);
+        let full = half.hamilton(&cq);
+        assert!(full.get_vec() == Vec3::forward(), "{:?}", full);
     }
 }
