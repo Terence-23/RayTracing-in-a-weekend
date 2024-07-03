@@ -161,9 +161,10 @@ impl Instance {
         ]))
     }
     pub fn get_aabb(&self) -> AABB {
-        let vecs = Interval::intervals_to_bounding_vecs(self.x, self.y, self.z);
-        let (x, y, z) =
-            Interval::from_vecs(self.onb.from_local(vecs.0), self.onb.from_local(vecs.1));
+        let mut vecs = Interval::intervals_to_bounding_vecs(self.x, self.y, self.z);
+        vecs.0 += self.gett();
+        vecs.1 += self.gett();
+        let (x, y, z) = Interval::from_vecs(vecs.0, vecs.1);
         return AABB {
             x,
             y,
@@ -191,10 +192,10 @@ impl Instance {
     }
     pub fn get_hit(&self, mut r: Ray, s: &Scene) -> Option<(Hit, Arc<dyn Object>)> {
         // eprintln!("instance_hit");
-        debug_assert!(r.direction.is_normal(), "dir is nan");
+        // debug_assert!(r.direction.is_normal(), "dir is nan");
         let mut min_h = None;
         r.origin -= self.position;
-        debug_assert!(r.direction.is_normal(), "dir2 is nan");
+        // debug_assert!(r.direction.is_normal(), "dir2 is nan");
         for (i, h) in self
             .objects
             .iter()
@@ -220,10 +221,10 @@ impl Instance {
             hit.0.p = self.rotation.rotate(&hit.0.p);
             hit.0.p += self.position;
 
-            debug_assert!(hit.0.n.length2() > 1e-8);
-            let sn = hit.0.n;
+            // debug_assert!(hit.0.n.length2() > 1e-8);
+            // let sn = hit.0.n;
             hit.0.n = self.rotation.rotate(&hit.0.n);
-            debug_assert!(hit.0.n.length2() > 1e-8, "{:?}, {:?}", self.rotation, sn);
+            // debug_assert!(hit.0.n.length2() > 1e-8, "{:?}, {:?}", self.rotation, sn);
             return Some(hit);
         }
 

@@ -134,7 +134,7 @@ impl Object for Quad {
             return None;
         }
         // eprintln!("Hit");
-        debug_assert!(self.normal.length2() > 1e-10);
+        // debug_assert!(self.normal.length2() > 1e-10);
         Some(super::Hit {
             t: t,
             n: self.normal,

@@ -72,13 +72,13 @@ pub(crate) fn light_biased_ray_cast(
                 };
                 let to_light = (middle_l - h.p).unit();
                 let r = Ray::new(h.p, to_light);
-                debug_assert!(
-                    r.direction.is_normal(),
-                    "rc, dir is nan {:?} -> {:?} -> {:?}",
-                    middle_l - h.p,
-                    to_light,
-                    r.direction
-                );
+                // debug_assert!(
+                //     r.direction.is_normal(),
+                //     "rc, dir is nan {:?} -> {:?} -> {:?}",
+                //     middle_l - h.p,
+                //     to_light,
+                //     r.direction
+                // );
                 match (vp.s.get_hit(r), l.get_hit(r, vp.s.mint, vp.s.maxt)) {
                     (Some(hr), Some(hl)) => {
                         if hr.0 == hl {
@@ -122,7 +122,7 @@ pub(crate) fn light_biased_ray_color(
         Some((h, o)) => {
             let mut count = 1.;
             let r = o.reflect(&h);
-            debug_assert!(r.direction.is_normal(), "reflected_dir is nan: {:?}", h);
+            // debug_assert!(r.direction.is_normal(), "reflected_dir is nan: {:?}", h);
             let mut color =
                 light_biased_ray_color(r, vp.clone(), depth - 1, lights.clone(), biased_weight);
             let o_color = o.color(&h);

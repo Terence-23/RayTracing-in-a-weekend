@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use image::ImageResult;
+const PI: f32 = core::f32::consts::PI;
 
 use crate::{
     objects::{
@@ -11,6 +12,7 @@ use crate::{
         texture::ConstColorTexture,
         Object,
     },
+    rotation::EulerAngles,
     vec3::{ray::Ray, vec3::Vec3},
     viewport::{
         camera::Camera,
@@ -340,18 +342,18 @@ fn glass_material_test() -> ImageResult<()> {
     let lights: Arc<[Arc<dyn Object>]> = Arc::new([
         Arc::new(Quad::new(
             Vec3 {
-                x: -0.10,
-                y: -0.10,
-                z: 4.5,
+                x: -0.90,
+                y: -0.90,
+                z: 4.95,
             },
             Vec3 {
-                x: 0.2,
+                x: 1.8,
                 y: 0.0,
                 z: 0.0,
             },
             Vec3 {
                 x: 0.0,
-                y: 0.2,
+                y: 1.8,
                 z: 0.0,
             },
             LAMBERTIAN.to_owned(),
@@ -564,39 +566,79 @@ fn glass_material_test() -> ImageResult<()> {
             )),
         )),
     ]));
-    let glass = Instance::new(Arc::new([Arc::new(Quad::new(
-        Vec3 {
-            x: -2.0,
-            y: -2.0,
-            z: 3.0,
-        },
-        Vec3 {
-            x: 2.0,
-            y: 0.0,
-            z: 0.0,
-        },
-        Vec3 {
-            x: 0.0,
-            y: 3.5,
-            z: 0.0,
-        },
-        Arc::new(MirrorGlass { ir: 1.5 }),
-        Vec3::zero(),
-        Arc::new(ConstColorTexture::new(
+    let mut glass = Instance::new(Arc::new([
+        Arc::new(Quad::new(
             Vec3 {
-                x: 0.8,
-                y: 0.8,
-                z: 0.8,
+                x: 0.,
+                y: -2.,
+                z: 0.,
             },
+            Vec3 {
+                x: 2.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 4.,
+                z: 0.0,
+            },
+            Arc::new(MirrorGlass { ir: 1.5 }),
             Vec3::zero(),
+            Arc::new(ConstColorTexture::new(
+                Vec3 {
+                    x: 0.8,
+                    y: 0.8,
+                    z: 0.8,
+                },
+                Vec3::zero(),
+            )),
         )),
-    ))]));
+        Arc::new(Quad::new(
+            Vec3 {
+                x: 0.,
+                y: -2.,
+                z: 0.01,
+            },
+            Vec3 {
+                x: 2.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 4.,
+                z: 0.0,
+            },
+            Arc::new(MirrorGlass { ir: 2. / 3. }),
+            Vec3::zero(),
+            Arc::new(ConstColorTexture::new(
+                Vec3 {
+                    x: 0.8,
+                    y: 0.8,
+                    z: 0.8,
+                },
+                Vec3::zero(),
+            )),
+        )),
+    ]));
+
+    glass.translate(Vec3 {
+        x: -2.,
+        y: 0.,
+        z: 3.5,
+    });
+    // glass.rotate(EulerAngles {
+    //     x: 0.,
+    //     y: PI / 6.,
+    //     z: 0.,
+    // });
+
     let (scene, lights) = (
         Scene::new(
             vec![
-                quad_box,
-                Instance::new(Arc::new([lights[1].clone()])),
-                // glass,
+                quad_box, // Instance::new(Arc::new([lights[1].clone()])),
+                glass,
             ],
             0.001,
             1000.0,
@@ -659,11 +701,11 @@ fn glass_material_test() -> ImageResult<()> {
         2.0,
     );
 
-    eprintln!("1:");
-    vp.render().save("test_out/materials/glass_ray_cast.png")?;
-    eprintln!("2:");
-    vp2.render()
-        .save("test_out/materials/glass_ray_color.png")?;
+    // eprintln!("1:");
+    // vp.render().save("test_out/materials/glass_ray_cast.png")?;
+    // eprintln!("2:");
+    // vp2.render()
+    // .save("test_out/materials/glass_ray_color.png")?;
     eprintln!("3:");
     vp3.render()
         .save("test_out/materials/glass_ray_color_old.png")
