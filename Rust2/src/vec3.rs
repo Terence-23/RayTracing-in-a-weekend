@@ -123,6 +123,48 @@ pub mod vec3 {
     }
 
     impl Vec3 {
+        pub const LEFT: Vec3 = Vec3 {
+            x: 1.,
+            y: 0.0,
+            z: 0.0,
+        };
+        pub const RIGHT: Vec3 = Vec3 {
+            x: -1.,
+            y: 0.0,
+            z: 0.0,
+        };
+        pub const FORWARD: Vec3 = Vec3 {
+            x: 0.0,
+            y: 0.0,
+            z: 1.0,
+        };
+        pub const BACKWARD: Vec3 = Vec3 {
+            x: 0.0,
+            y: 0.0,
+            z: -1.0,
+        };
+        pub const UP: Vec3 = Vec3 {
+            x: 0.,
+            y: 1.,
+            z: 0.,
+        };
+        pub const DOWN: Vec3 = Vec3 {
+            x: 0.,
+            y: -1.,
+            z: 0.,
+        };
+        pub const ZERO: Vec3 = Vec3 {
+            x: 0.,
+            y: 0.,
+            z: 0.,
+        };
+        pub const BLACK: Vec3 = Vec3::ZERO;
+        pub const WHITE: Vec3 = Vec3 {
+            x: 1.,
+            y: 1.,
+            z: 1.,
+        };
+
         pub fn rotated_uni(&self, rot: impl Rotation) -> Vec3 {
             rot.rotate(self)
         }
@@ -153,12 +195,11 @@ pub mod vec3 {
                 z: self.x * -bsin + self.y * asin * bcos + self.z * acos * bcos,
             }
         }
+
         pub fn new(x: f32, y: f32, z: f32) -> Self {
             Self { x, y, z }
         }
-        pub fn to_rgb(&self) -> Rgb<f32> {
-            Rgb([self.x, self.y, self.z])
-        }
+
         pub fn length2(&self) -> f32 {
             self.x * self.x + self.y * self.y + self.z * self.z
         }
@@ -178,6 +219,7 @@ pub mod vec3 {
         pub fn unit(&self) -> Vec3 {
             *self / self.length()
         }
+
         pub fn from_rgb(col: Rgb<f32>) -> Vec3 {
             Vec3 {
                 x: col.0[0],
@@ -192,6 +234,17 @@ pub mod vec3 {
                 z: col.0[2],
             }
         }
+        pub fn to_rgb(&self) -> Rgb<f32> {
+            Rgb([self.x, self.y, self.z])
+        }
+        pub(crate) fn to_rgb_u8(&self) -> Rgb<u8> {
+            Rgb([
+                (self.x * 255.99).clamp(0.0, 255.0).round() as u8,
+                (self.y * 255.99).clamp(0.0, 255.0).round() as u8,
+                (self.z * 255.99).clamp(0.0, 255.0).round() as u8,
+            ])
+        }
+
         pub fn random(min: f32, max: f32) -> Vec3 {
             Vec3 {
                 x: random::<f32>() * (max - min) + min,
@@ -226,27 +279,6 @@ pub mod vec3 {
             };
             // return p.unit();
         }
-        pub fn up() -> Vec3 {
-            Vec3 {
-                x: 0.0,
-                y: 1.0,
-                z: 0.0,
-            }
-        }
-        pub fn down() -> Vec3 {
-            Vec3 {
-                x: 0.0,
-                y: -1.0,
-                z: 0.0,
-            }
-        }
-        pub fn forward() -> Vec3 {
-            Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 1.0,
-            }
-        }
 
         pub fn reflect(&self, n: Vec3) -> Vec3 {
             *self - n * 2.0 * self.dot(n)
@@ -269,29 +301,6 @@ pub mod vec3 {
             }
         }
 
-        pub(crate) fn zero() -> Self {
-            Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            }
-        }
-
-        pub(crate) fn to_rgb_u8(&self) -> Rgb<u8> {
-            Rgb([
-                (self.x * 255.99).clamp(0.0, 255.0).round() as u8,
-                (self.y * 255.99).clamp(0.0, 255.0).round() as u8,
-                (self.z * 255.99).clamp(0.0, 255.0).round() as u8,
-            ])
-        }
-
-        pub(crate) fn right() -> Vec3 {
-            Vec3 {
-                x: 1.,
-                y: 0.0,
-                z: 0.0,
-            }
-        }
         pub fn is_normal(&self) -> bool {
             !(self.x.is_nan() || self.y.is_nan() || self.z.is_nan())
         }
@@ -299,7 +308,7 @@ pub mod vec3 {
 }
 #[allow(dead_code)]
 pub mod ray {
-    use crate::vec3::vec3::Vec3;
+    use crate::{rotation::Rotation, vec3::vec3::Vec3};
     use image::Rgb;
 
     #[derive(Debug, Clone, Copy, PartialEq)]
@@ -328,10 +337,10 @@ pub mod ray {
         pub fn at(&self, t: f32) -> Vec3 {
             self.origin + self.direction * t
         }
-        pub fn rotated(self, rot: Vec3) -> Self {
+        pub fn rotated(self, rot: impl Rotation) -> Self {
             Self {
-                origin: self.origin.rotated(rot),
-                direction: self.direction.rotated(rot),
+                origin: rot.rotate(&self.origin),
+                direction: rot.rotate(&self.direction),
                 time: self.time,
             }
         }

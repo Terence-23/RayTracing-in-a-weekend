@@ -7,7 +7,7 @@ use crate::{
 
 #[derive(Clone)]
 pub struct Scene {
-    objects: Vec<Instance>,
+    // objects: Vec<Instance>,
     aabb: AABB,
     pub(crate) mint: f32,
     pub(crate) maxt: f32,
@@ -19,7 +19,7 @@ impl Scene {
 
     pub(crate) fn new(objects: Vec<Instance>, mint: f32, maxt: f32) -> Self {
         Self {
-            objects: objects.clone(),
+            // objects: objects.clone(),
             aabb: AABB::new(objects),
             mint,
             maxt,

@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use image::ImageResult;
-const PI: f32 = core::f32::consts::PI;
 
 use crate::{
     objects::{
@@ -119,7 +118,7 @@ fn mixed_material_test() -> ImageResult<()> {
                     y: 0.2,
                     z: 0.2,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         )),
         //Light
@@ -189,7 +188,7 @@ fn mixed_material_test() -> ImageResult<()> {
                     y: 0.2,
                     x: 0.2,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         )),
         //Orange
@@ -221,7 +220,7 @@ fn mixed_material_test() -> ImageResult<()> {
                     y: 0.5,
                     z: 0.,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         )),
         //Teal
@@ -253,7 +252,7 @@ fn mixed_material_test() -> ImageResult<()> {
                     y: 0.8,
                     z: 0.8,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         )),
     ]));
@@ -268,9 +267,9 @@ fn mixed_material_test() -> ImageResult<()> {
 
     let cam = Camera::new(
         WIDTH as f32 / HEIGHT as f32,
-        Vec3::zero(),
-        Vec3::up(),
-        Vec3::forward(), //(Vec3::forward() * 5. + Vec3::right()).unit(),
+        Vec3::ZERO,
+        Vec3::UP,
+        Vec3::FORWARD, //(Vec3::forward() * 5. + Vec3::right()).unit(),
         90.0,
         0.0,
     );
@@ -428,7 +427,7 @@ fn glass_material_test() -> ImageResult<()> {
                     y: 0.2,
                     z: 0.2,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         )),
         //Light
@@ -498,7 +497,7 @@ fn glass_material_test() -> ImageResult<()> {
                     y: 0.2,
                     x: 0.2,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         )),
         //Orange
@@ -530,7 +529,7 @@ fn glass_material_test() -> ImageResult<()> {
                     y: 0.5,
                     z: 0.,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         )),
         //Teal
@@ -562,7 +561,7 @@ fn glass_material_test() -> ImageResult<()> {
                     y: 0.8,
                     z: 0.8,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         )),
     ]));
@@ -584,14 +583,14 @@ fn glass_material_test() -> ImageResult<()> {
                 z: 0.0,
             },
             Arc::new(MirrorGlass { ir: 1.5 }),
-            Vec3::zero(),
+            Vec3::ZERO,
             Arc::new(ConstColorTexture::new(
                 Vec3 {
                     x: 0.8,
                     y: 0.8,
                     z: 0.8,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         )),
         Arc::new(Quad::new(
@@ -611,14 +610,14 @@ fn glass_material_test() -> ImageResult<()> {
                 z: 0.0,
             },
             Arc::new(MirrorGlass { ir: 2. / 3. }),
-            Vec3::zero(),
+            Vec3::ZERO,
             Arc::new(ConstColorTexture::new(
                 Vec3 {
                     x: 0.8,
                     y: 0.8,
                     z: 0.8,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         )),
     ]));
@@ -648,9 +647,9 @@ fn glass_material_test() -> ImageResult<()> {
 
     let cam = Camera::new(
         WIDTH as f32 / HEIGHT as f32,
-        Vec3::zero(),
-        Vec3::up(),
-        Vec3::forward(), //(Vec3::forward() * 5. + Vec3::right()).unit(),
+        Vec3::ZERO,
+        Vec3::UP,
+        Vec3::FORWARD, //(Vec3::forward() * 5. + Vec3::right()).unit(),
         90.0,
         0.0,
     );

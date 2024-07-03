@@ -111,6 +111,16 @@ impl From<Quaternion> for EulerAngles {
 }
 
 impl Quaternion {
+    pub fn new_from_axis(angle: f32, axis: Vec3) -> Self {
+        let a_unit = axis.unit();
+        let sin = (angle * 0.5).sin();
+        Quaternion {
+            w: (angle * 0.5).cos(),
+            x: sin * a_unit.x,
+            y: sin * a_unit.y,
+            z: sin * a_unit.z,
+        }
+    }
     pub fn new(w: f32, x: f32, y: f32, z: f32) -> Self {
         Quaternion {
             w,
@@ -190,12 +200,12 @@ mod test {
     fn nor_rot() -> () {
         let q = ZERO_ROTATION;
         let cq = q.conjugate();
-        let rotated: Quaternion = (&Vec3::forward()).into();
+        let rotated: Quaternion = (&Vec3::FORWARD).into();
 
         let half = q.hamilton(&rotated);
         assert!(half.get_vec().length2() > 1e-10, "half_to_short {:?}", half);
         eprintln!("r: {:?},\nh: {:?}\nq: {:?}\ncq: {:?}", rotated, half, q, cq);
         let full = half.hamilton(&cq);
-        assert!(full.get_vec() == Vec3::forward(), "{:?}", full);
+        assert!(full.get_vec() == Vec3::FORWARD, "{:?}", full);
     }
 }

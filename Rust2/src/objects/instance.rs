@@ -1,7 +1,7 @@
-use std::sync::Arc;
+use std::{sync::Arc, vec};
 
 use crate::{
-    onb::ONB,
+    // onb::ONB,
     quaternions::{Quaternion, ZERO_ROTATION},
     rotation::Rotation,
     vec3::{ray::Ray, vec3::Vec3},
@@ -19,9 +19,9 @@ use super::{
 
 #[derive(Clone)]
 pub struct Instance {
-    pub position: Vec3,
+    position: Vec3,
     rotation: Quaternion,
-    onb: ONB,
+    // onb: ONB,
     objects: Arc<[Arc<dyn Object>]>,
     x: Interval,
     y: Interval,
@@ -70,7 +70,7 @@ impl Instance {
                 y: 0.0,
                 z: 0.0,
             },
-            onb: ONB::new(),
+            // onb: ONB::new(),
             objects,
             x: intervals.0,
             y: intervals.1,
@@ -161,10 +161,27 @@ impl Instance {
         ]))
     }
     pub fn get_aabb(&self) -> AABB {
-        let mut vecs = Interval::intervals_to_bounding_vecs(self.x, self.y, self.z);
-        vecs.0 += self.gett();
-        vecs.1 += self.gett();
-        let (x, y, z) = Interval::from_vecs(vecs.0, vecs.1);
+        let vecs = Interval::intervals_to_bounding_vecs(self.x, self.y, self.z);
+        let mut minv = vecs.1;
+        let mut maxv = vecs.0;
+
+        for i in 0..8 {
+            let v = self.rotation.rotate(&Vec3 {
+                x: if i & 0b1 == 0 { vecs.0.x } else { vecs.1.x },
+                y: if i & 0b10 == 0 { vecs.0.y } else { vecs.1.y },
+                z: if i & 0b100 == 0 { vecs.0.z } else { vecs.1.z },
+            });
+            minv.x = minf(v.x, minv.x);
+            minv.y = minf(v.y, minv.y);
+            minv.z = minf(v.z, minv.z);
+            maxv.x = maxf(v.x, maxv.x);
+            maxv.y = maxf(v.y, maxv.y);
+            maxv.z = maxf(v.z, maxv.z);
+        }
+
+        minv += self.gett();
+        maxv += self.gett();
+        let (x, y, z) = Interval::from_vecs(minv, maxv);
         return AABB {
             x,
             y,
@@ -177,7 +194,7 @@ impl Instance {
     fn empty() -> Instance {
         Instance {
             position: Vec3::new(0.0, 0.0, 0.0),
-            onb: ONB::new(),
+            // onb: ONB::new(),
             rotation: Quaternion {
                 w: 1.0,
                 x: 0.0,
@@ -195,6 +212,7 @@ impl Instance {
         // debug_assert!(r.direction.is_normal(), "dir is nan");
         let mut min_h = None;
         r.origin -= self.position;
+        r = r.rotated(self.getr());
         // debug_assert!(r.direction.is_normal(), "dir2 is nan");
         for (i, h) in self
             .objects

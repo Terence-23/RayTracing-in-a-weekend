@@ -164,6 +164,7 @@ impl Object for Quad {
     }
 }
 
+#[allow(unused)]
 mod tests {
     use crate::{
         objects::{instance::Instance, material::LAMBERTIAN, texture::ConstColorTexture},
@@ -215,7 +216,7 @@ mod tests {
                         y: 0.2,
                         z: 0.2,
                     },
-                    Vec3::zero(),
+                    Vec3::ZERO,
                 )),
             )),
             //Green
@@ -247,7 +248,7 @@ mod tests {
                         y: 1.0,
                         z: 0.2,
                     },
-                    Vec3::zero(),
+                    Vec3::ZERO,
                 )),
             )),
             //Blue
@@ -279,7 +280,7 @@ mod tests {
                         y: 0.2,
                         x: 0.2,
                     },
-                    Vec3::zero(),
+                    Vec3::ZERO,
                 )),
             )),
             //Orange
@@ -311,7 +312,7 @@ mod tests {
                         y: 0.5,
                         z: 0.,
                     },
-                    Vec3::zero(),
+                    Vec3::ZERO,
                 )),
             )),
             //Teal
@@ -343,7 +344,7 @@ mod tests {
                         y: 0.8,
                         z: 0.8,
                     },
-                    Vec3::zero(),
+                    Vec3::ZERO,
                 )),
             )),
         ]));
@@ -436,7 +437,7 @@ mod tests {
                     y: 1.0,
                     z: 0.2,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         ))]));
         let scene = Scene::new(vec![quads], 0.001, 10000.0);

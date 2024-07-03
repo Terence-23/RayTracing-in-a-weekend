@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use image::ImageResult;
+const PI: f32 = core::f32::consts::PI;
 
 use crate::{
     objects::{
@@ -11,6 +12,8 @@ use crate::{
         texture::ConstColorTexture,
         Object,
     },
+    quaternions::Quaternion,
+    rotation::EulerAngles,
     vec3::{ray::Ray, vec3::Vec3},
     viewport::{
         camera::Camera,
@@ -23,7 +26,7 @@ use crate::{
 #[test]
 fn normal_sphere_test() -> Result<(), image::ImageError> {
     let i = Instance::new(Arc::new([Arc::new(Sphere {
-        origin: Vec3::zero(),
+        origin: Vec3::ZERO,
         radius: 0.5,
         mat: LAMBERTIAN.clone(),
         texture: Arc::new(ConstColorTexture::new(
@@ -32,7 +35,7 @@ fn normal_sphere_test() -> Result<(), image::ImageError> {
                 y: 0.8,
                 z: 0.8,
             },
-            Vec3::zero(),
+            Vec3::ZERO,
         )),
     })]));
     let s = Scene::new(vec![i.clone()], 0.001, 1000.0);
@@ -85,7 +88,7 @@ fn normal_sphere_test() -> Result<(), image::ImageError> {
 #[test]
 fn lambertian_sphere_test() -> Result<(), image::ImageError> {
     let i = Instance::new(Arc::new([Arc::new(Sphere {
-        origin: Vec3::zero(),
+        origin: Vec3::ZERO,
         radius: 0.5,
         mat: LAMBERTIAN.clone(),
         texture: Arc::new(ConstColorTexture::new(
@@ -94,7 +97,7 @@ fn lambertian_sphere_test() -> Result<(), image::ImageError> {
                 y: 0.4,
                 z: 0.8,
             },
-            Vec3::zero(),
+            Vec3::ZERO,
         )),
     })]));
     let s = Scene::new(vec![i.clone()], 0.001, 1000.0);
@@ -233,7 +236,7 @@ fn ray_cast_test() -> ImageResult<()> {
                     y: 0.2,
                     z: 0.2,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         )),
         //Light
@@ -303,7 +306,7 @@ fn ray_cast_test() -> ImageResult<()> {
                     y: 0.2,
                     x: 0.2,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         )),
         //Orange
@@ -335,7 +338,7 @@ fn ray_cast_test() -> ImageResult<()> {
                     y: 0.5,
                     z: 0.,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         )),
         //Teal
@@ -367,7 +370,7 @@ fn ray_cast_test() -> ImageResult<()> {
                     y: 0.8,
                     z: 0.8,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         )),
     ]));
@@ -378,9 +381,9 @@ fn ray_cast_test() -> ImageResult<()> {
     );
     let cam = Camera::new(
         WIDTH as f32 / HEIGHT as f32,
-        Vec3::zero(),
-        Vec3::up(),
-        Vec3::forward(),
+        Vec3::ZERO,
+        Vec3::UP,
+        Vec3::FORWARD,
         90.0,
         0.0,
     );
@@ -397,7 +400,7 @@ fn ray_cast_test() -> ImageResult<()> {
         HEIGHT,
         SAMPLES,
         10,
-        Vec3::zero(),
+        Vec3::ZERO,
         2.0,
     );
 
@@ -494,7 +497,7 @@ fn make_scene() -> (Scene, Arc<[Arc<dyn Object>]>) {
                     y: 0.2,
                     z: 0.2,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         )),
         //Light
@@ -564,7 +567,7 @@ fn make_scene() -> (Scene, Arc<[Arc<dyn Object>]>) {
                     y: 0.2,
                     x: 0.2,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         )),
         //Orange
@@ -596,7 +599,7 @@ fn make_scene() -> (Scene, Arc<[Arc<dyn Object>]>) {
                     y: 0.5,
                     z: 0.,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         )),
         //Teal
@@ -628,7 +631,7 @@ fn make_scene() -> (Scene, Arc<[Arc<dyn Object>]>) {
                     y: 0.8,
                     z: 0.8,
                 },
-                Vec3::zero(),
+                Vec3::ZERO,
             )),
         )),
     ]));
@@ -653,9 +656,9 @@ fn light_biased_ray_color_test() -> ImageResult<()> {
     let (scene, lights) = make_scene();
     let cam = Camera::new(
         WIDTH as f32 / HEIGHT as f32,
-        Vec3::zero(),
-        Vec3::up(),
-        Vec3::forward(),
+        Vec3::ZERO,
+        Vec3::UP,
+        Vec3::FORWARD,
         90.0,
         0.0,
     );
@@ -675,7 +678,7 @@ fn light_biased_ray_color_test() -> ImageResult<()> {
         HEIGHT,
         SAMPLES,
         10,
-        Vec3::zero(),
+        Vec3::ZERO,
         2.0,
     );
     let vp2 = Viewport::new(
@@ -686,7 +689,7 @@ fn light_biased_ray_color_test() -> ImageResult<()> {
         HEIGHT,
         SAMPLES,
         DEPTH,
-        Vec3::zero(),
+        Vec3::ZERO,
         2.0,
     );
 
@@ -696,3 +699,53 @@ fn light_biased_ray_color_test() -> ImageResult<()> {
 
 #[cfg(test)]
 mod material_tests;
+
+#[test]
+fn rotation_test() -> ImageResult<()> {
+    const WIDTH: usize = 400;
+    const HEIGHT: usize = 300;
+    const SAMPLES: usize = 25;
+    const DEPTH: usize = 2;
+    const BIASED_WEIGHT: f32 = 100.;
+    let cam = Camera::new(
+        WIDTH as f32 / HEIGHT as f32,
+        Vec3::ZERO,
+        Vec3::UP,
+        Vec3::FORWARD,
+        50.0,
+        0.0,
+    );
+    let mut r_box = Instance::new_box(
+        Vec3 {
+            x: -1.,
+            y: -1.,
+            z: -1.,
+        },
+        Vec3 {
+            x: 1.,
+            y: 1.,
+            z: 1.,
+        },
+        Arc::new(ConstColorTexture::new(Vec3::WHITE * 0.6, Vec3::ZERO)),
+        LAMBERTIAN.clone(),
+    );
+    r_box.rotate(Quaternion::new_from_axis(PI / 4., Vec3::UP));
+    println!("{:?}", r_box.getr());
+    r_box.translate(Vec3::FORWARD * 5. + Vec3::RIGHT);
+
+    let scene = Scene::new(vec![r_box], 0.0001, 10000.);
+
+    let vp = Viewport::new(
+        cam.clone(),
+        scene.clone(),
+        &ray_color,
+        WIDTH,
+        HEIGHT,
+        SAMPLES,
+        DEPTH,
+        Vec3::WHITE * 0.6,
+        1.0,
+    );
+
+    vp.render().save("test_out/rotation_test.png")
+}

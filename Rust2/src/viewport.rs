@@ -67,7 +67,7 @@ impl Viewport {
         for i in 0..self.height {
             let mut row = Vec::with_capacity(self.width);
             for j in 0..self.width {
-                let mut pix = Vec3::zero();
+                let mut pix = Vec3::ZERO;
                 for k in 0..s_sqrt {
                     for l in 0..s_sqrt {
                         let dir = self.cam.left_top

@@ -20,7 +20,7 @@ pub(crate) fn ray_color(r: Ray, vp: Arc<Viewport>, depth: usize) -> Vec3 {
 
             let reflect = o.reflect(&h);
 
-            // debug_assert!(color.emmited == Vec3::zero(), "emmmited is not zero");
+            // debug_assert!(color.emmited == Vec3::ZERO, "emmmited is not zero");
             let next_color = ray_color(reflect, vp, depth - 1);
             // dbg!(next_color);
             // debug_assert!(
@@ -61,7 +61,7 @@ pub(crate) fn light_biased_ray_cast(
     match vp.s.get_hit(r) {
         Some((h, o)) => {
             let mut count = 0;
-            let mut color = Vec3::zero();
+            let mut color = Vec3::ZERO;
             let o_color = o.color(&h);
             for l in lights.iter() {
                 let aabb = l.get_aabb();
@@ -95,7 +95,7 @@ pub(crate) fn light_biased_ray_cast(
             let ret = (if count != 0 {
                 color.field_wise_mult(o_color.multiplied) / count as f32
             } else {
-                Vec3::zero()
+                Vec3::ZERO
             }) + o_color.emmited;
             debug_assert!(
                 !(ret.x.is_nan() || ret.y.is_nan() || ret.z.is_nan()),

@@ -7,6 +7,7 @@ pub mod viewport;
 pub mod write_img;
 
 #[cfg(test)]
+#[allow(unused)]
 pub mod tests;
 
 fn main() {

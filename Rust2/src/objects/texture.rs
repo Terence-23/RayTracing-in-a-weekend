@@ -67,7 +67,7 @@ impl ImageTexture {
             width: w as usize,
             height: h as usize,
             img: img.pixels().map(|col| Vec3::from_rgb_ref(col)).collect(),
-            emmit_img: vec![Vec3::zero()],
+            emmit_img: vec![Vec3::ZERO],
             emmit_height: 1,
             emmit_width: 1,
         })
