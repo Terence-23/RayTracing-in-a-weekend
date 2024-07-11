@@ -9,6 +9,7 @@ pub mod material;
 pub mod quad;
 pub mod sphere;
 pub mod texture;
+pub mod triangle;
 
 pub trait CloneObject: Clone + Object {}
 
