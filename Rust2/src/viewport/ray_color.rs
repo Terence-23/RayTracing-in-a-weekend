@@ -7,7 +7,7 @@ use crate::{
 
 use super::Viewport;
 
-pub(crate) type RayColor = &'static dyn Fn(Ray, Arc<Viewport>, usize) -> Vec3;
+pub(crate) type RayColor = Arc<dyn Fn(Ray, Arc<Viewport>, usize) -> Vec3 + Sync + Send>;
 #[allow(unused)]
 pub(crate) fn ray_color(r: Ray, vp: Arc<Viewport>, depth: usize) -> Vec3 {
     if depth == 0 {
@@ -56,7 +56,7 @@ pub(crate) fn light_biased_ray_cast(
     r: Ray,
     vp: Arc<Viewport>,
     _: usize,
-    lights: Arc<[Arc<dyn Object>]>,
+    lights: Arc<[Arc<dyn Object + Send + Sync>]>,
 ) -> Vec3 {
     match vp.s.get_hit(r) {
         Some((h, o)) => {
@@ -112,7 +112,7 @@ pub(crate) fn light_biased_ray_color(
     r: Ray,
     vp: Arc<Viewport>,
     depth: usize,
-    lights: Arc<[Arc<dyn Object>]>,
+    lights: Arc<[Arc<dyn Object + Send + Sync>]>,
     biased_weight: f32,
 ) -> Vec3 {
     if depth <= 0 {

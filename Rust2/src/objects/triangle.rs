@@ -13,9 +13,9 @@ pub struct Triangle {
     pub origin: Vec3,
     pub u: Vec3,
     pub v: Vec3,
-    pub mat: Arc<dyn Material>,
+    pub mat: Arc<dyn Material + Send + Sync>,
     // pub velocity: Vec3,
-    pub texture: Arc<dyn Texture>,
+    pub texture: Arc<dyn Texture + Send + Sync>,
 
     //Internals
     normal: Vec3,
@@ -29,8 +29,8 @@ impl Triangle {
         origin: Vec3,
         u: Vec3,
         v: Vec3,
-        mat: Arc<dyn Material>,
-        texture: Arc<dyn Texture>,
+        mat: Arc<dyn Material + Send + Sync>,
+        texture: Arc<dyn Texture + Send + Sync>,
     ) -> Self {
         let n = u.cross(v);
         let normal = n.unit();
@@ -187,7 +187,7 @@ mod tests {
         let vp = Viewport::new(
             cam.clone(),
             scene.clone(),
-            &ray_color,
+            Arc::new(ray_color),
             WIDTH,
             HEIGHT,
             SAMPLES,

@@ -14,8 +14,8 @@ use super::{
 pub struct Sphere {
     pub origin: Vec3,
     pub radius: f32,
-    pub mat: Arc<dyn Material>,
-    pub texture: Arc<dyn Texture>,
+    pub mat: Arc<dyn Material + Send + Sync>,
+    pub texture: Arc<dyn Texture + Send + Sync>,
 }
 
 impl Object for Sphere {

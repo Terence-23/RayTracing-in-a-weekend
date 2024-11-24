@@ -189,7 +189,11 @@ impl AABB {
         }
     }
 
-    pub(crate) fn get_hit(&self, r: Ray, s: &Scene) -> Option<(Hit, Arc<dyn Object>)> {
+    pub(crate) fn get_hit(
+        &self,
+        r: Ray,
+        s: &Scene,
+    ) -> Option<(Hit, Arc<dyn Object + Send + Sync>)> {
         let x_hit = match self.x.intersect(r.direction.x, r.origin.x) {
             Some(n) => n,
             None => return None,

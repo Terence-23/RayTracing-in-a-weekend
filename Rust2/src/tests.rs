@@ -63,7 +63,7 @@ fn normal_sphere_test() -> Result<(), image::ImageError> {
     let vp = Viewport::new(
         cam,
         s,
-        &ray_color::normal_color,
+        Arc::new(ray_color),
         300,
         200,
         25,
@@ -125,7 +125,7 @@ fn lambertian_sphere_test() -> Result<(), image::ImageError> {
     let vp = Viewport::new(
         cam,
         s,
-        &ray_color::ray_color,
+        Arc::new(ray_color),
         300,
         200,
         25,
@@ -147,7 +147,7 @@ fn ray_cast_test() -> ImageResult<()> {
     const HEIGHT: usize = 300;
     const SAMPLES: usize = 10;
 
-    let lights: Arc<[Arc<dyn Object>]> = Arc::new([
+    let lights: Arc<[Arc<dyn Object + Send + Sync>]> = Arc::new([
         Arc::new(Quad::new(
             Vec3 {
                 x: -0.10,
@@ -395,7 +395,7 @@ fn ray_cast_test() -> ImageResult<()> {
     let vp = Viewport::new(
         cam,
         scene,
-        Box::leak(rc),
+        Arc::new(rc),
         WIDTH,
         HEIGHT,
         SAMPLES,
@@ -407,8 +407,8 @@ fn ray_cast_test() -> ImageResult<()> {
     vp.render().save("test_out/ray_cast_test.png")
 }
 
-fn make_scene() -> (Scene, Arc<[Arc<dyn Object>]>) {
-    let lights: Arc<[Arc<dyn Object>]> = Arc::new([
+fn make_scene() -> (Scene, Arc<[Arc<dyn Object + Send + Sync>]>) {
+    let lights: Arc<[Arc<dyn Object + Send + Sync>]> = Arc::new([
         Arc::new(Quad::new(
             Vec3 {
                 x: -0.10,
@@ -673,7 +673,7 @@ fn light_biased_ray_color_test() -> ImageResult<()> {
     let vp = Viewport::new(
         cam.clone(),
         scene.clone(),
-        Box::leak(ray_cast),
+        Arc::new(ray_cast),
         WIDTH,
         HEIGHT,
         SAMPLES,
@@ -684,7 +684,7 @@ fn light_biased_ray_color_test() -> ImageResult<()> {
     let vp2 = Viewport::new(
         cam,
         scene,
-        Box::leak(biased_ray_color),
+        Arc::new(biased_ray_color),
         WIDTH,
         HEIGHT,
         SAMPLES,
@@ -701,9 +701,9 @@ fn light_biased_ray_color_test() -> ImageResult<()> {
 mod material_tests;
 
 #[test]
-fn rotation_test() -> ImageResult<()> {
-    const WIDTH: usize = 400;
-    const HEIGHT: usize = 300;
+pub fn rotation_test() -> ImageResult<()> {
+    const WIDTH: usize = 30_000;
+    const HEIGHT: usize = 30_000;
     const SAMPLES: usize = 25;
     const DEPTH: usize = 2;
     const BIASED_WEIGHT: f32 = 100.;
@@ -738,7 +738,7 @@ fn rotation_test() -> ImageResult<()> {
     let vp = Viewport::new(
         cam.clone(),
         scene.clone(),
-        &ray_color,
+        Arc::new(ray_color),
         WIDTH,
         HEIGHT,
         SAMPLES,

@@ -13,7 +13,7 @@ pub struct Scene {
     pub(crate) maxt: f32,
 }
 impl Scene {
-    pub fn get_hit(&self, r: Ray) -> Option<(Hit, Arc<dyn Object>)> {
+    pub fn get_hit(&self, r: Ray) -> Option<(Hit, Arc<dyn Object + Send + Sync>)> {
         self.aabb.get_hit(r, self)
     }
 

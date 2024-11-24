@@ -29,7 +29,7 @@ fn mixed_material_test() -> ImageResult<()> {
     const DEPTH: usize = 9;
     const BIASED_WEIGHT: f32 = 100.;
 
-    let lights: Arc<[Arc<dyn Object>]> = Arc::new([
+    let lights: Arc<[Arc<dyn Object + Send + Sync>]> = Arc::new([
         Arc::new(Quad::new(
             Vec3 {
                 x: -0.10,
@@ -289,7 +289,7 @@ fn mixed_material_test() -> ImageResult<()> {
     let vp = Viewport::new(
         cam.clone(),
         scene.clone(),
-        Box::leak(ray_cast),
+        Arc::new(ray_cast),
         WIDTH,
         HEIGHT,
         SAMPLES,
@@ -300,7 +300,7 @@ fn mixed_material_test() -> ImageResult<()> {
     let vp2 = Viewport::new(
         cam.clone(),
         scene.clone(),
-        Box::leak(biased_ray_color),
+        Arc::new(biased_ray_color),
         WIDTH,
         HEIGHT,
         SAMPLES,
@@ -311,7 +311,7 @@ fn mixed_material_test() -> ImageResult<()> {
     let vp3 = Viewport::new(
         cam,
         scene,
-        &ray_color,
+        Arc::new(ray_color),
         WIDTH,
         HEIGHT,
         SAMPLES,
@@ -330,15 +330,16 @@ fn mixed_material_test() -> ImageResult<()> {
         .save("test_out/materials/mixed_ray_color_old.png")
 }
 
+const BIASED_WEIGHT: f32 = 100.;
+
 #[test]
 fn glass_material_test() -> ImageResult<()> {
     const WIDTH: usize = 400;
     const HEIGHT: usize = 300;
     const SAMPLES: usize = 100;
     const DEPTH: usize = 9;
-    const BIASED_WEIGHT: f32 = 100.;
 
-    let lights: Arc<[Arc<dyn Object>]> = Arc::new([
+    let lights: Arc<[Arc<dyn Object + Send + Sync>]> = Arc::new([
         Arc::new(Quad::new(
             Vec3 {
                 x: -0.90,
@@ -657,6 +658,7 @@ fn glass_material_test() -> ImageResult<()> {
     let ray_cast = Box::new(move |r: Ray, vp: Arc<Viewport>, d: usize| {
         light_biased_ray_cast(r, vp, d, lclone.clone())
     });
+
     let biased_ray_color = Box::new(move |r: Ray, vp: Arc<Viewport>, d: usize| {
         light_biased_ray_color(r, vp, d, lights.clone(), BIASED_WEIGHT)
     });
@@ -669,7 +671,7 @@ fn glass_material_test() -> ImageResult<()> {
     let vp = Viewport::new(
         cam.clone(),
         scene.clone(),
-        Box::leak(ray_cast),
+        Arc::new(ray_cast),
         WIDTH,
         HEIGHT,
         SAMPLES,
@@ -680,7 +682,7 @@ fn glass_material_test() -> ImageResult<()> {
     let vp2 = Viewport::new(
         cam.clone(),
         scene.clone(),
-        Box::leak(biased_ray_color),
+        Arc::new(biased_ray_color),
         WIDTH,
         HEIGHT,
         SAMPLES,
@@ -691,7 +693,7 @@ fn glass_material_test() -> ImageResult<()> {
     let vp3 = Viewport::new(
         cam,
         scene,
-        &ray_color,
+        Arc::new(ray_color),
         WIDTH,
         HEIGHT,
         SAMPLES,

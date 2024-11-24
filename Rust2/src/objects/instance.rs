@@ -22,7 +22,7 @@ pub struct Instance {
     position: Vec3,
     rotation: Quaternion,
     // onb: ONB,
-    objects: Arc<[Arc<dyn Object>]>,
+    objects: Arc<[Arc<dyn Object + Send + Sync>]>,
     x: Interval,
     y: Interval,
     z: Interval,
@@ -46,7 +46,7 @@ impl Instance {
         return self.position.to_owned();
     }
 
-    pub fn new(objects: Arc<[Arc<dyn Object>]>) -> Self {
+    pub fn new(objects: Arc<[Arc<dyn Object + Send + Sync>]>) -> Self {
         if objects.len() == 0 {
             return Self::empty();
         }
@@ -77,7 +77,12 @@ impl Instance {
             z: intervals.2,
         }
     }
-    pub fn new_box(a: Vec3, b: Vec3, tex: Arc<dyn Texture>, mat: Arc<dyn Material>) -> Self {
+    pub fn new_box(
+        a: Vec3,
+        b: Vec3,
+        tex: Arc<dyn Texture + Send + Sync>,
+        mat: Arc<dyn Material + Send + Sync>,
+    ) -> Self {
         let min = Vec3::new(minf(a.x, b.x), minf(a.y, b.y), minf(a.z, b.z));
         let max = Vec3::new(maxf(a.x, b.x), maxf(a.y, b.y), maxf(a.z, b.z));
 
@@ -207,7 +212,7 @@ impl Instance {
             z: Interval::new(0.0, 0.0),
         }
     }
-    pub fn get_hit(&self, mut r: Ray, s: &Scene) -> Option<(Hit, Arc<dyn Object>)> {
+    pub fn get_hit(&self, mut r: Ray, s: &Scene) -> Option<(Hit, Arc<dyn Object + Send + Sync>)> {
         // eprintln!("instance_hit");
         // debug_assert!(r.direction.is_normal(), "dir is nan");
         let mut min_h = None;

@@ -1,5 +1,7 @@
 pub mod objects;
 pub mod onb;
+#[allow(unused)]
+pub mod postprocessing;
 pub mod quaternions;
 pub mod rotation;
 pub mod vec3;
@@ -10,6 +12,9 @@ pub mod write_img;
 #[allow(unused)]
 pub mod tests;
 
-fn main() {
+use image::ImageResult;
+
+fn main() -> ImageResult<()> {
     println!("Hello, world!");
+    Ok(())
 }
